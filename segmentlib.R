@@ -85,9 +85,9 @@ slib$seg.list.of.data.frame<-function(d){
 	return(l)
 }
 
-slib$print.seg.list<-function(seg.list){
+slib$print.seg.list<-function(seg.list,lambda){
 	les<-length(seg.list)
-	cat(les," segments:","\n")
+	cat(les," segments at lambda:",lambda,"\n")
 	for ( i in 1:les ){
 		l<-seg.list[[i]]
 		cat( min(l$pos), max(l$pos), l$mean.score, l$l2dist, "\n" )	
