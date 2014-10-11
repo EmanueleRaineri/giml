@@ -94,6 +94,20 @@ slib$print.seg.list<-function(seg.list,lambda){
 	}
 }
 
+
+slib$loop.over.lambda<-function(seg.list,all.lambda){
+	for (lambda in all.lambda){
+		while(TRUE){
+			if (length(seg.list)==1) break
+			all.pairs<-slib$all.pairs.l2(seg.list,lambda)
+			new.seg.list<-slib$update.segmentation.l2(seg.list,all.pairs)
+			if (length(new.seg.list)==length(seg.list) ) break
+			seg.list<-new.seg.list
+		}
+		slib$print.seg.list(seg.list,lambda)
+	}
+}
+
 while("slib" %in% search())
   detach("slib")
 attach(slib)
