@@ -108,6 +108,7 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 }
 
 ###############likelyhood############################
+
 slib$make.segment <- function(pos,nconv,conv){
 	# pos,nconv,conv are all vectors
 	d      <- (nconv+conv)
@@ -134,8 +135,7 @@ slib$delta.segments <- function ( seg1, seg2, lambda ){
 	tmp.join$loglik-seg1$loglik-seg2$loglik+lambda
 }
 
-
-
+###########################################
 
 while("slib" %in% search())
   detach("slib")
