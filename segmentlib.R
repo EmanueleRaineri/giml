@@ -1,4 +1,33 @@
+library(stats4)
+
 slib = new.env()
+
+#### beta ####
+
+ll<-function(theta){
+	r<-dbinom(x=nc,size=d,p=theta)
+	-sum(log(r))
+}
+
+slib$moment.match <- function(mu,var){
+	alpha <- (mu^2-mu^3-mu*var)/var
+	beta  <- alpha*(1-mu)/mu
+	c(alpha,beta)
+}
+
+
+#slib$make.segment.beta <- function(pos, nconv, conv ){
+	# pos,nconv,conv are all vectors
+	#d      <- (nconv+conv)
+	#theta  <- nconv/(nconv+conv)
+	#ml<-stats4::mle(minuslog=ll,
+    #	start=list(theta=mean(nconv/d)))
+	#mltheta <- ml@coef 
+	#loglik <-  ml@min
+	#list( pos=pos , nconv=nconv , conv=conv , 
+	#depth=d , theta=theta , loglik=loglik)
+#}
+
 #### L2 ####
 slib$sdist<-function(score){
 	max(score)-min(score)
@@ -108,15 +137,6 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 }
 
 ###############likelyhood############################
-
-slib$make.segment <- function(pos,nconv,conv){
-	# pos,nconv,conv are all vectors
-	d      <- (nconv+conv)
-	theta  <- nconv/(nconv+conv)
-	loglik <- dbinom(x=nconv,size=d,p=median(theta),log=TRUE)
-	list( pos=pos , nconv=nconv , conv=conv , 
-	depth=d , theta=theta , loglik=sum(loglik))
-}
 
 slib$join.segments <- function( seg1 , seg2 ){
 	pos<-c( seg1$pos , seg2$pos )
