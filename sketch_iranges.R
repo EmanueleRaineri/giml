@@ -11,3 +11,5 @@ query<-IRanges::RangedData(IRanges::IRanges(seq(1,100000,by=5000),seq(1,100000,b
 ov<-IRanges::findOverlaps(query,rd)
 ra<-ranges(ov,ranges(query),ranges(rd))
 
+
+

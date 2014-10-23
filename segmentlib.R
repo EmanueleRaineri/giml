@@ -83,7 +83,7 @@ slib$seg.list.of.data.frame<-function(d){
 	for(i in 1:nrow(d)){
 		pos <-d[i,2]
 		score  <- d[i,3]
-		l[[i]] <- make.segment.l2( pos, score)   	
+		l[[i]] <- slib$make.segment.l2( pos, score)   	
 	}
 	return(l)
 }
@@ -126,6 +126,21 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 
 ###############likelyhood############################
 
+slib$make.segment<-function( pos , nconv, conv ){
+	# pos, nonconv, conv are vectors
+	d= nconv + conv
+	theta=nconv/d
+	list(
+		pos = pos, 
+		nconv = nconv,
+		conv = conv,
+		depth = d,
+		theta = theta,
+		loglik = sum(dbinom( x=nconv, size=d, p=median(theta),log=TRUE))
+	)
+}
+
+
 slib$join.segments <- function( seg1 , seg2 ){
 	pos<-c( seg1$pos , seg2$pos )
 	nconv<-c( seg1$nconv , seg2$nconv )
@@ -143,22 +158,25 @@ slib$delta.segments <- function ( seg1, seg2, lambda ){
 	tmp.join$loglik-seg1$loglik-seg2$loglik+lambda
 }
 
-
 slib$all.pairs <- function(seg.list,lambda){
 	les<-length(seg.list)
 	seg.pairs<-rep(0,les-1)
-	seg.pairs<-
-		vapply( seq( 1 , les-1 ),
-		FUN=function(i){slib$delta.segments(seg.list[[i]],seg.list[[i+1]],lambda)},
-		FUN.VALUE=1)
-	return(seg.pairs)	
+	tmp.max<--Inf
+	idx.max<--1
+	for ( i in 1:(les-1)){
+		seg.pairs[[i]]<- slib$delta.segments(seg.list[[i]],seg.list[[i+1]],lambda)
+		if (seg.pairs[[i]]>tmp.max) {
+			tmp.max<-seg.pairs[[i]]
+			idx.max<-i
+		} 	
+	}
+	list( seg.pairs , idx.max )	
 }
 
-slib$update.segmentation<-function(seg.list,all.pairs){
-	idx <- which.max(all.pairs)
-	if (all.pairs[[idx]]<0){
-		seg.list[[idx]]<-slib$join.segments.l2(seg.list[[idx]],seg.list[[idx+1]])
-		seg.list<-seg.list[-(idx+1)]
+slib$update.segmentation<-function(seg.list,all.pairs, idx.max){
+	if (all.pairs[[idx.max]]>0){
+		seg.list[[idx.max]]<-slib$join.segments(seg.list[[idx.max]],seg.list[[idx.max+1]])
+		seg.list<-seg.list[-(idx.max+1)]
 	}
 	return(seg.list)
 }
@@ -169,7 +187,7 @@ slib$print.seg.list.lik<-function(seg.list,lambda){
 	#cat(les," segments at lambda:",lambda,"\n")
 	for ( i in 1:les ){
 		l<-seg.list[[i]]
-		cat( min(l$pos), max(l$pos), l$mean.score, l$l2dist, lambda , "\n" )	
+		cat( min(l$pos), max(l$pos), l$nconv, l$conv, l$d, l$theta, l$loglik, min(l$theta), max(l$theta),lambda , "\n" )	
 	}
 }
 
@@ -179,8 +197,10 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 		cat("lambda:",lambda,"\n")
 		while(TRUE){
 			if (length(seg.list)==1) break
-			all.pairs<-slib$all.pairs(seg.list,lambda)
-			new.seg.list<-slib$update.segmentation(seg.list,all.pairs)
+			all.pairs.max<-slib$all.pairs(seg.list,lambda)
+			all.pairs<-all.pairs.max[[1]]
+			idx.max<-all.pairs.max[[2]]
+			new.seg.list<-slib$update.segmentation(seg.list,all.pairs,idx.max)
 			if (length(new.seg.list)==length(seg.list) ) break
 			seg.list<-new.seg.list
 		}
@@ -188,19 +208,39 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 		for (i in 1:length(seg.list)){
 			li<-seg.list[[i]]
 			idx<- idx+1
-			segmentation[idx,1]<-min(li$pos)
-			segmentation[idx,2]<-max(li$pos)
-			segmentation[idx,3]<-length(li$pos)
-			segmentation[idx,4]<-li$mean.score
-			segmentation[idx,5]<-li$l2dist
-			segmentation[idx,6]<-lambda
+			segmentation[idx,1]<- min(li$pos)
+			segmentation[idx,2]<- max(li$pos)
+			segmentation[idx,3]<- length(li$pos)
+			segmentation[idx,4]<- median(li$theta)
+			segmentation[idx,5]<- li$loglik
+			segmentation[idx,6]<- min(li$theta)
+			segmentation[idx,7]<- max(li$theta)
+			segmentation[idx,8]<- lambda
 		}
 	}
-	names(segmentation)<-c("from","to","npoints","mean","l2dist","lambda")
+	names(segmentation)<-c("from","to","npoints","theta","loglik","mintheta","maxtheta","lambda")
 	return(segmentation)
 }
 
-
+slib$seg.list.of.data.frame.lik<-function(d){
+	l<-list()
+	for(i in 1:nrow(d)){
+		pos <-d[i,2]
+		nonconv  <- d[i,3]
+		conv <- d[i,4]
+		l[[i]] <- slib$make.segment( pos, nonconv, conv )   	
+	}
+	return(l)
+}
+slib$plot.segmentation<-function(methyl,segments,lambda,lb,ub){
+	seg<-segments[segments$lambda==lambda,]
+	#lb<-min(seg$from)
+	#ub<-max(seg$to)
+	plot(methyl$V2,methyl$V3/(methyl$V3+methyl$V4),xlim=c(lb,ub))
+	for (i in 1:nrow(seg)){
+		lines(c(seg[i,1],seg[i,2]),c(seg[i,4],seg[i,4]),col="red",lwd=2)
+	}
+}
 ###########################################
 
 while("slib" %in% search())
