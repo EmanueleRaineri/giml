@@ -140,7 +140,6 @@ slib$make.segment<-function( pos , nconv, conv ){
 	)
 }
 
-
 slib$join.segments <- function( seg1 , seg2 ){
 	pos<-c( seg1$pos , seg2$pos )
 	nconv<-c( seg1$nconv , seg2$nconv )
@@ -174,7 +173,7 @@ slib$all.pairs <- function(seg.list,lambda){
 }
 
 slib$update.segmentation<-function(seg.list,all.pairs, idx.max){
-	if (all.pairs[[idx.max]]>0){
+	if (all.pairs[[idx.max]]>0 && idx.max<length(all.pairs)){
 		seg.list[[idx.max]]<-slib$join.segments(seg.list[[idx.max]],seg.list[[idx.max+1]])
 		seg.list<-seg.list[-(idx.max+1)]
 	}
@@ -195,14 +194,20 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 	segmentation<-data.frame()
 	for (lambda in all.lambda){
 		cat("lambda:",lambda,"\n")
+		all.pairs.max<-slib$all.pairs(seg.list,lambda)
+		all.pairs<-all.pairs.max[[1]]
+		idx.max<-all.pairs.max[[2]]
 		while(TRUE){
 			if (length(seg.list)==1) break
-			all.pairs.max<-slib$all.pairs(seg.list,lambda)
-			all.pairs<-all.pairs.max[[1]]
-			idx.max<-all.pairs.max[[2]]
 			new.seg.list<-slib$update.segmentation(seg.list,all.pairs,idx.max)
 			if (length(new.seg.list)==length(seg.list) ) break
 			seg.list<-new.seg.list
+			new.all.pairs<-all.pairs
+			new.all.pairs<-new.all.pairs[(-idx.max)]
+			new.all.pairs[[idx.max-1]]<-slib$delta.segments(seg.list[[idx.max-1]],seg.list[[idx.max]],lambda)
+			new.all.pairs[[idx.max]]<-slib$delta.segments(seg.list[[idx.max]],seg.list[[idx.max+1]],lambda)
+			all.pairs<-new.all.pairs
+			idx.max<-which.max(all.pairs)
 		}
 		idx<-nrow(segmentation)
 		for (i in 1:length(seg.list)){
