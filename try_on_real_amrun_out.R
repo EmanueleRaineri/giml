@@ -50,5 +50,3 @@ dev.off()
 png("seg05.png",height=1000,width=1000)
 plot.segments(amrun , seg05, xlim)
 dev.off()
-
-
