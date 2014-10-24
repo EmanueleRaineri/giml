@@ -104,8 +104,8 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 		while(TRUE){
 			if (length(seg.list)==1) break
 			all.pairs<-slib$all.pairs.l2(seg.list,lambda)
-			new.seg.list<-slib$update.segmentation.l2(seg.list,all.pairs)
-			if (length(new.seg.list)==length(seg.list) ) break
+			new.seg.list<-slib$update.segmentation.l2( seg.list , all.pairs )
+			if (length( new.seg.list ) == length( seg.list ) ) break
 			seg.list<-new.seg.list
 		}
 		idx<-nrow(segmentation)
@@ -164,7 +164,7 @@ slib$all.pairs <- function(seg.list,lambda){
 	idx.max<--1
 	for ( i in 1:(les-1)){
 		seg.pairs[[i]]<- slib$delta.segments(seg.list[[i]],seg.list[[i+1]],lambda)
-		if (seg.pairs[[i]]>tmp.max) {
+		if (seg.pairs[[i]]>=tmp.max) {
 			tmp.max<-seg.pairs[[i]]
 			idx.max<-i
 		} 	
@@ -173,41 +173,63 @@ slib$all.pairs <- function(seg.list,lambda){
 }
 
 slib$update.segmentation<-function(seg.list,all.pairs, idx.max){
-	if (all.pairs[[idx.max]]>0 && idx.max<length(all.pairs)){
+	if (all.pairs[[idx.max]]>0 && idx.max<length(seg.list)){
 		seg.list[[idx.max]]<-slib$join.segments(seg.list[[idx.max]],seg.list[[idx.max+1]])
 		seg.list<-seg.list[-(idx.max+1)]
 	}
 	return(seg.list)
 }
 
-
 slib$print.seg.list.lik<-function(seg.list,lambda){
 	les<-length(seg.list)
 	#cat(les," segments at lambda:",lambda,"\n")
 	for ( i in 1:les ){
 		l<-seg.list[[i]]
-		cat( min(l$pos), max(l$pos), l$nconv, l$conv, l$d, l$theta, l$loglik, min(l$theta), max(l$theta),lambda , "\n" )	
+		cat( min(l$pos), 
+		max(l$pos), 
+		l$nconv, 
+		l$conv, 
+		l$d,
+		min(l$theta),
+		l$theta, 
+		max(l$theta),
+		l$loglik,
+		lambda, "\n" )	
 	}
+	cat("*******\n")
 }
 
 slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 	segmentation<-data.frame()
 	for (lambda in all.lambda){
-		cat("lambda:",lambda,"\n")
+		#cat("lambda:",lambda,"\n")
 		all.pairs.max<-slib$all.pairs(seg.list,lambda)
 		all.pairs<-all.pairs.max[[1]]
 		idx.max<-all.pairs.max[[2]]
+		tmp.max<-all.pairs[[idx.max]]
+		#cat("all pairs initial:",all.pairs,"\n")
 		while(TRUE){
+			#print(all.pairs)
 			if (length(seg.list)==1) break
-			new.seg.list<-slib$update.segmentation(seg.list,all.pairs,idx.max)
+			#cat("idx.max:",idx.max,"\n")
+			#slib$print.seg.list.lik( seg.list , lambda )
+			new.seg.list<-slib$update.segmentation( seg.list, all.pairs, idx.max )
+			#slib$print.seg.list.lik( new.seg.list , lambda )
 			if (length(new.seg.list)==length(seg.list) ) break
 			seg.list<-new.seg.list
-			new.all.pairs<-all.pairs
-			new.all.pairs<-new.all.pairs[(-idx.max)]
-			new.all.pairs[[idx.max-1]]<-slib$delta.segments(seg.list[[idx.max-1]],seg.list[[idx.max]],lambda)
-			new.all.pairs[[idx.max]]<-slib$delta.segments(seg.list[[idx.max]],seg.list[[idx.max+1]],lambda)
-			all.pairs<-new.all.pairs
-			idx.max<-which.max(all.pairs)
+			all.pairs<-all.pairs[(-idx.max)]
+			#print(all.pairs)
+			#cat("idx.max:",idx.max,"\n")
+			if (idx.max>1){
+				all.pairs[[idx.max-1]]<-slib$delta.segments(seg.list[[idx.max-1]],seg.list[[idx.max]],lambda)
+			}
+			#print(all.pairs)
+			if (idx.max<length(seg.list)){
+				all.pairs[[idx.max]]<-slib$delta.segments(seg.list[[idx.max]],seg.list[[idx.max+1]],lambda)
+			}
+			#print(all.pairs)
+			#cat("all pairs:",all.pairs,"\n")
+			idx.max <- which.max(all.pairs)
 		}
 		idx<-nrow(segmentation)
 		for (i in 1:length(seg.list)){
@@ -216,14 +238,14 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 			segmentation[idx,1]<- min(li$pos)
 			segmentation[idx,2]<- max(li$pos)
 			segmentation[idx,3]<- length(li$pos)
-			segmentation[idx,4]<- median(li$theta)
-			segmentation[idx,5]<- li$loglik
-			segmentation[idx,6]<- min(li$theta)
-			segmentation[idx,7]<- max(li$theta)
+			segmentation[idx,4]<- min(li$theta)
+			segmentation[idx,5]<- median(li$theta)
+			segmentation[idx,6]<- max(li$theta)
+			segmentation[idx,7]<- li$loglik
 			segmentation[idx,8]<- lambda
 		}
 	}
-	names(segmentation)<-c("from","to","npoints","theta","loglik","mintheta","maxtheta","lambda")
+	names(segmentation)<-c("from","to","npoints","mintheta","theta","maxtheta", "loglik","lambda")
 	return(segmentation)
 }
 
@@ -237,6 +259,7 @@ slib$seg.list.of.data.frame.lik<-function(d){
 	}
 	return(l)
 }
+
 slib$plot.segmentation<-function(methyl,segments,lambda,lb,ub){
 	seg<-segments[segments$lambda==lambda,]
 	#lb<-min(seg$from)
@@ -246,6 +269,7 @@ slib$plot.segmentation<-function(methyl,segments,lambda,lb,ub){
 		lines(c(seg[i,1],seg[i,2]),c(seg[i,4],seg[i,4]),col="red",lwd=2)
 	}
 }
+
 ###########################################
 
 while("slib" %in% search())

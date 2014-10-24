@@ -1,5 +1,6 @@
-library(IRanges)
+#library(IRanges)
 source("segmentlib.R")
+options(digits=4)
 #
 #cat("defining example data\n")
 #pos1 <- c(10,20,30,40,50)
