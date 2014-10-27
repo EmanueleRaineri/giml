@@ -128,15 +128,16 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 
 slib$make.segment<-function( pos , nconv, conv ){
 	# pos, nonconv, conv are vectors
-	d= nconv + conv
-	theta=nconv/d
+	d<- nconv + conv
+	theta<-nconv/d
+	p <- dbinom( x=nconv, size=d, p=median(theta))
 	list(
 		pos = pos, 
 		nconv = nconv,
 		conv = conv,
 		depth = d,
 		theta = theta,
-		loglik = sum(dbinom( x=nconv, size=d, p=median(theta),log=TRUE))
+		loglik = sum(log(p/(1-p)))
 	)
 }
 
@@ -146,7 +147,8 @@ slib$join.segments <- function( seg1 , seg2 ){
 	conv<-c( seg1$conv , seg2$conv )
 	d<-c( seg1$d , seg2$d )
 	theta<-c( seg1$theta , seg2$theta )
-	loglik <- dbinom( x=nconv, size=d, p=median(theta),log=TRUE) 
+	p<-dbinom( x=nconv, size=d, p=median(theta))
+	loglik <- log(p/(1-p)) 
 	list( pos=pos , nconv=nconv , conv=conv , 
 	depth=d , theta=theta , loglik=sum(loglik))
 }
