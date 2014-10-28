@@ -131,14 +131,15 @@ slib$make.segment<-function( pos , nconv, conv ){
 	d<- nconv + conv
 	theta<-nconv/d
 	p <- dbinom( x=nconv, size=d, p=median(theta))
+	loglik <- sum(log(p/(1-p)))
+	if (loglik==Inf) loglik<-100
 	list(
 		pos = pos, 
 		nconv = nconv,
 		conv = conv,
 		depth = d,
 		theta = theta,
-		loglik = sum(log(p/(1-p)))
-	)
+		loglik = loglik)
 }
 
 slib$join.segments <- function( seg1 , seg2 ){
@@ -149,8 +150,12 @@ slib$join.segments <- function( seg1 , seg2 ){
 	theta<-c( seg1$theta , seg2$theta )
 	p<-dbinom( x=nconv, size=d, p=median(theta))
 	loglik <- log(p/(1-p)) 
+	loglik[loglik==Inf]<-100
+	loglik[loglik==-Inf]<- -100
+	loglik<-sum(loglik)
+	if (loglik==Inf) loglik<-100
 	list( pos=pos , nconv=nconv , conv=conv , 
-	depth=d , theta=theta , loglik=sum(loglik))
+	depth=d , theta=theta , loglik=loglik)
 }
 
 slib$delta.segments <- function ( seg1, seg2, lambda ){
@@ -166,6 +171,7 @@ slib$all.pairs <- function(seg.list,lambda){
 	idx.max<--1
 	for ( i in 1:(les-1)){
 		seg.pairs[[i]]<- slib$delta.segments(seg.list[[i]],seg.list[[i+1]],lambda)
+		#cat(i," ",seg.pairs[[i]],"\n")
 		if (seg.pairs[[i]]>=tmp.max) {
 			tmp.max<-seg.pairs[[i]]
 			idx.max<-i
@@ -204,7 +210,7 @@ slib$print.seg.list.lik<-function(seg.list,lambda){
 slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 	segmentation<-data.frame()
 	for (lambda in all.lambda){
-		#cat("lambda:",lambda,"\n")
+		cat("lambda:",lambda,"\n")
 		all.pairs.max<-slib$all.pairs(seg.list,lambda)
 		all.pairs<-all.pairs.max[[1]]
 		idx.max<-all.pairs.max[[2]]
