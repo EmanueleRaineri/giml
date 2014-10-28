@@ -126,13 +126,20 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 
 ###############likelyhood############################
 
+
+slib$lik<-function(nconv,d,theta){
+	loglik<-dbinom( x=nconv, size=d, p=median(theta),log=T)
+	sum(loglik)	
+}
+
 slib$make.segment<-function( pos , nconv, conv ){
 	# pos, nonconv, conv are vectors
 	d<- nconv + conv
 	theta<-nconv/d
-	p <- dbinom( x=nconv, size=d, p=median(theta))
-	loglik <- sum(log(p/(1-p)))
-	if (loglik==Inf) loglik<-100
+	#p <- dbinom( x=nconv, size=d, p=median(theta))
+	#loglik <- sum(log(p/(1-p)))
+	#if (loglik==Inf) loglik<-100
+	loglik<-slib$lik( nconv , d , theta )
 	list(
 		pos = pos, 
 		nconv = nconv,
@@ -143,25 +150,30 @@ slib$make.segment<-function( pos , nconv, conv ){
 }
 
 slib$join.segments <- function( seg1 , seg2 ){
-	pos<-c( seg1$pos , seg2$pos )
 	nconv<-c( seg1$nconv , seg2$nconv )
-	conv<-c( seg1$conv , seg2$conv )
 	d<-c( seg1$d , seg2$d )
 	theta<-c( seg1$theta , seg2$theta )
-	p<-dbinom( x=nconv, size=d, p=median(theta))
-	loglik <- log(p/(1-p)) 
-	loglik[loglik==Inf]<-100
-	loglik[loglik==-Inf]<- -100
-	loglik<-sum(loglik)
-	if (loglik==Inf) loglik<-100
-	list( pos=pos , nconv=nconv , conv=conv , 
-	depth=d , theta=theta , loglik=loglik)
+	#p<-dbinom( x=nconv, size=d, p=median(theta))
+	#loglik <- log(p/(1-p)) 
+	#loglik[loglik==Inf]<-100
+	#loglik[loglik==-Inf]<- -100
+	#loglik<-sum(loglik)
+	#if (loglik==Inf) loglik<-100
+	loglik <- slib$lik( nconv , d , theta )
+	list( pos= c( seg1$pos , seg2$pos ) , 
+	nconv = nconv, 
+	conv = c( seg1$conv , seg2$conv ) , 
+	depth = d , 
+	theta = theta ,
+	loglik = loglik)
 }
 
 slib$delta.segments <- function ( seg1, seg2, lambda ){
 	#want delta to be positive
-	tmp.join<-join.segments( seg1 , seg2 )
-	tmp.join$loglik-seg1$loglik-seg2$loglik+lambda
+	loglik<-slib$lik(c(seg1$nconv,seg2$nconv),c(seg1$d,seg2$d),c(seg1$theta,seg2$theta))
+	#tmp.join<-join.segments( seg1 , seg2 )
+	#tmp.join$loglik-seg1$loglik-seg2$loglik+lambda
+	loglik-seg1$loglik-seg2$loglik+lambda
 }
 
 slib$all.pairs <- function(seg.list,lambda){
@@ -210,7 +222,8 @@ slib$print.seg.list.lik<-function(seg.list,lambda){
 slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 	segmentation<-data.frame()
 	for (lambda in all.lambda){
-		cat("lambda:",lambda,"\n")
+		counter<-0
+		#cat("lambda:",lambda," length seg.list:",length(seg.list),"\n")
 		all.pairs.max<-slib$all.pairs(seg.list,lambda)
 		all.pairs<-all.pairs.max[[1]]
 		idx.max<-all.pairs.max[[2]]
@@ -229,15 +242,16 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 			#print(all.pairs)
 			#cat("idx.max:",idx.max,"\n")
 			if (idx.max>1){
-				all.pairs[[idx.max-1]]<-slib$delta.segments(seg.list[[idx.max-1]],seg.list[[idx.max]],lambda)
+				all.pairs[[idx.max-1]] <- slib$delta.segments(seg.list[[idx.max-1]],seg.list[[idx.max]],lambda)
 			}
 			#print(all.pairs)
-			if (idx.max<length(seg.list)){
-				all.pairs[[idx.max]]<-slib$delta.segments(seg.list[[idx.max]],seg.list[[idx.max+1]],lambda)
+			if ( idx.max<length(seg.list) ){
+				all.pairs[[idx.max]] <- slib$delta.segments(seg.list[[idx.max]],seg.list[[idx.max+1]],lambda)
 			}
 			#print(all.pairs)
 			#cat("all pairs:",all.pairs,"\n")
 			idx.max <- which.max(all.pairs)
+			counter<-counter+1
 		}
 		idx<-nrow(segmentation)
 		for (i in 1:length(seg.list)){
@@ -252,6 +266,7 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 			segmentation[idx,7]<- li$loglik
 			segmentation[idx,8]<- lambda
 		}
+		cat("seg.list:",length(seg.list)," counter:",counter,"\n")
 	}
 	names(segmentation)<-c("from","to","npoints","mintheta","theta","maxtheta", "loglik","lambda")
 	return(segmentation)
@@ -273,12 +288,21 @@ slib$plot.segmentation<-function(methyl,segments,lambda,lb,ub){
 	#lb<-min(seg$from)
 	#ub<-max(seg$to)
 	plot(methyl$V2,methyl$V3/(methyl$V3+methyl$V4),xlim=c(lb,ub))
+	abline(v=c(lb,ub),col="blue")
 	for (i in 1:nrow(seg)){
-		lines(c(seg[i,1],seg[i,2]),c(seg[i,4],seg[i,4]),col="red",lwd=2)
+		lines(c(seg[i,1],seg[i,2]),c(seg[i,"theta"],seg[i,"theta"]),col="red",lwd=2)
 	}
 }
 
+
+#####priority queue#####
+
+
+
+
 ###########################################
+
+
 
 while("slib" %in% search())
   detach("slib")
