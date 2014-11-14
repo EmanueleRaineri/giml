@@ -1,4 +1,5 @@
 library(stats4)
+library(lineprof)
 
 slib = new.env()
 
@@ -128,7 +129,7 @@ slib$loop.over.lambda<-function(seg.list,all.lambda){
 
 
 slib$lik<-function(nconv,d,theta){
-	loglik<-dbinom( x=nconv, size=d, p=median(theta),log=T)
+	loglik<-dbinom( x=nconv, size=d, p=mean(theta),log=T)
 	sum(loglik)	
 }
 
@@ -139,7 +140,7 @@ slib$make.segment<-function( pos , nconv, conv ){
 	#p <- dbinom( x=nconv, size=d, p=median(theta))
 	#loglik <- sum(log(p/(1-p)))
 	#if (loglik==Inf) loglik<-100
-	loglik<-slib$lik( nconv , d , theta )
+	loglik<-slib$lik.c( nconv , d , theta )
 	list(
 		pos = pos, 
 		nconv = nconv,
@@ -148,6 +149,8 @@ slib$make.segment<-function( pos , nconv, conv ){
 		theta = theta,
 		loglik = loglik)
 }
+
+slib$lik.c<-compiler::cmpfun(slib$lik)
 
 slib$join.segments <- function( seg1 , seg2 ){
 	nconv<-c( seg1$nconv , seg2$nconv )
@@ -159,7 +162,7 @@ slib$join.segments <- function( seg1 , seg2 ){
 	#loglik[loglik==-Inf]<- -100
 	#loglik<-sum(loglik)
 	#if (loglik==Inf) loglik<-100
-	loglik <- slib$lik( nconv , d , theta )
+	loglik <- slib$lik.c( nconv , d , theta )
 	list( pos= c( seg1$pos , seg2$pos ) , 
 	nconv = nconv, 
 	conv = c( seg1$conv , seg2$conv ) , 
@@ -168,9 +171,11 @@ slib$join.segments <- function( seg1 , seg2 ){
 	loglik = loglik)
 }
 
+slib$join.segments.c<-compiler::cmpfun(slib$join.segments)
+
 slib$delta.segments <- function ( seg1, seg2, lambda ){
 	#want delta to be positive
-	loglik<-slib$lik(c(seg1$nconv,seg2$nconv),c(seg1$d,seg2$d),c(seg1$theta,seg2$theta))
+	loglik <- slib$lik.c(c(seg1$nconv,seg2$nconv),c(seg1$d,seg2$d),c(seg1$theta,seg2$theta))
 	#tmp.join<-join.segments( seg1 , seg2 )
 	#tmp.join$loglik-seg1$loglik-seg2$loglik+lambda
 	loglik-seg1$loglik-seg2$loglik+lambda
@@ -194,7 +199,7 @@ slib$all.pairs <- function(seg.list,lambda){
 
 slib$update.segmentation<-function(seg.list,all.pairs, idx.max){
 	if (all.pairs[[idx.max]]>0 && idx.max<length(seg.list)){
-		seg.list[[idx.max]]<-slib$join.segments(seg.list[[idx.max]],seg.list[[idx.max+1]])
+		seg.list[[idx.max]]<-slib$join.segments.c(seg.list[[idx.max]],seg.list[[idx.max+1]])
 		seg.list<-seg.list[-(idx.max+1)]
 	}
 	return(seg.list)
@@ -220,7 +225,16 @@ slib$print.seg.list.lik<-function(seg.list,lambda){
 }
 
 slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
-	segmentation<-data.frame()
+	#segmentation<-data.frame()
+	idx<-1
+	col1<-rep(0,length(seg.list))
+	col2<-rep(0,length(seg.list))
+	col3<-rep(0,length(seg.list))
+	col4<-rep(0,length(seg.list))
+	col5<-rep(0,length(seg.list))
+	col6<-rep(0,length(seg.list))
+	col7<-rep(0,length(seg.list))
+	col8<-rep(0,length(seg.list))
 	for (lambda in all.lambda){
 		counter<-0
 		#cat("lambda:",lambda," length seg.list:",length(seg.list),"\n")
@@ -253,21 +267,31 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 			idx.max <- which.max(all.pairs)
 			counter<-counter+1
 		}
-		idx<-nrow(segmentation)
+		#idx<-nrow(segmentation)
+		#idx<-length(col1)
 		for (i in 1:length(seg.list)){
 			li<-seg.list[[i]]
+			col1[idx]<- min(li$pos)
+			col2[idx]<- max(li$pos)
+			col3[idx]<- length(li$pos)
+			col4[idx]<- min(li$theta)
+			col5[idx]<- median(li$theta)
+			col6[idx]<- max(li$theta)
+			col7[idx]<- li$loglik
+			col8[idx]<- lambda
 			idx<- idx+1
-			segmentation[idx,1]<- min(li$pos)
-			segmentation[idx,2]<- max(li$pos)
-			segmentation[idx,3]<- length(li$pos)
-			segmentation[idx,4]<- min(li$theta)
-			segmentation[idx,5]<- median(li$theta)
-			segmentation[idx,6]<- max(li$theta)
-			segmentation[idx,7]<- li$loglik
-			segmentation[idx,8]<- lambda
+			#segmentation[idx,1]<- min(li$pos)
+			#segmentation[idx,2]<- max(li$pos)
+			#segmentation[idx,3]<- length(li$pos)
+			#segmentation[idx,4]<- min(li$theta)
+			#segmentation[idx,5]<- median(li$theta)
+			#segmentation[idx,6]<- max(li$theta)
+			#segmentation[idx,7]<- li$loglik
+			#segmentation[idx,8]<- lambda
 		}
 		cat("seg.list:",length(seg.list)," counter:",counter,"\n")
 	}
+	segmentation<-data.frame(col1,col2,col3,col4,col5,col6,col7,col8)	
 	names(segmentation)<-c("from","to","npoints","mintheta","theta","maxtheta", "loglik","lambda")
 	return(segmentation)
 }
