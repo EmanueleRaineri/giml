@@ -5,6 +5,10 @@
 
 
 float dbinom(int x, int size, float p){
+	if (p==1){
+		if (x==size) return 0;
+		else return -FLT_MAX ;
+	}
 	float bcoeff = lgammaf(size+1) - lgammaf(x+1) - lgammaf(size-x+1);
 	//printf("%f\n",bcoeff);
 	return ( bcoeff + x*log(p) + (size-x)*log(1-p) );
@@ -13,68 +17,80 @@ float dbinom(int x, int size, float p){
 
 
 
-int main(){
+int main(int argc, char* argv[]){
 
-	const int size=1000000;
-	float a[size];
 	int i,j;
-	float max;
-	int maxi;
 	const int sizeline=1000;
 	char* buffer=malloc(sizeline*sizeof(char));
 	int nlines=0;
-	while(!feof(stdin)){
-		fgets(buffer,sizeline,stdin);
+	
+	/*count lines*/
+	
+	FILE* in = fopen(argv[1],"r");
+	
+	while(!feof(in)){
+		fgets(buffer,sizeline,in);
 		nlines++;
 	}
 	nlines--;
 	printf("nlines:%d\n",nlines);
-	
-	/*count lines*/
-	
 
-	
-	
-	/*for(i=0;i<size;i++){
-		a[i]=rand()/10;
+	fclose(in);
+	/* 5 static data structures */
+
+	float*  theta=malloc(nlines*sizeof(float));
+	int*    pos=malloc(nlines*sizeof(int));
+	int*    nc=malloc(nlines*sizeof(int));
+	int*    c=malloc(nlines*sizeof(int));
+	int*    segment_id=malloc(nlines*sizeof(int));
+
+
+	typedef struct node{
+		// from, to refers to indexes for the four arrays mentioned above, 
+		// not to real positions along 
+		// the chromosome
+		int from;
+		int to;
+		float loglik;
+		int segment_id;
+		struct node* prev;
+		struct node* next;
+	} node;
+
+
+	node* el, *head;
+	el=malloc(sizeof(node));
+	head=el;
+	head->prev=NULL;
+
+	in=fopen(argv[1],"r");
+		
+
+
+	for( i=0; i<nlines; i++ ) {
+		buffer =	fgets(buffer,sizeline,in);
+		sscanf(buffer,"%*s %d %d %d",pos+i,nc+i,c+i);
+		segment_id[i]=i;
+		theta[i]=(float)nc[i]/(nc[i]+c[i]);
+		el->from=i;
+		el->to=i;
+		el->loglik = dbinom(nc[i],nc[i]+c[i],theta[i]);  
+		el->segment_id=i;
+		el->next=malloc(sizeof(node));
+		el->next->prev=el;
+		el=el->next;
 	}
-
-	for (j=0;j<100;j++){
-		max = -FLT_MAX; 
-		maxi=-1;
-		i=0;
-		while(1){
-			if (i==size) break;
-			if (a[i]>max) {max=a[i]; maxi=i;}
-			i++;
-		}
-	}
-
-	printf( "max:%f at:%d\n", max , maxi );
-*/
-	for (j=0;j<1000000;j++){
-		max=dbinom(4,10,0.5);
-		//printf("dbinom(%d,10,0.0)=%f\n",j,dbinom(j,10,0.5));
-	}
+	el->prev->next=NULL;
+	fclose(in);
 	
-
-	/*
-		data structures 
-
-		float array theta
-		int array pos
-		int array nc
-		int array c
-		int segment_id
-
-		list of segments. a node in the list contains:
-
-		from, to ,loglik, segment_id
-		prev,next
-
-		from, to refers to indexes for the four arrays mentioned above, not to real positions along 
-		the chromosome
+	while(1){
+		if (head==NULL) break;
 	
-			
-	*/
+		printf("%d\t",head->segment_id);
+		printf("%d\t",head->from);
+		printf("%d\t",head->to);
+		printf("%.4f\n",head->loglik);
+		
+		head = head->next;
+	}
 }
