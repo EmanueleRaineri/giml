@@ -1,0 +1,51 @@
+---
+title: "gimli"
+author: Emanuele Raineri 
+date: November 17th, 2014
+output: beamer_presentation
+---
+
+#methyldiff: a short summary
+
+a short intro to the innards of methyldiff
+
+-Methylation level: $\theta$
+
+-You never know it with infinite precision (due to finite coverage)
+
+-Nonconverted reads : $\overline{n}$. Converted reads: $n$.
+
+---
+
+If you knew $\theta$, you could compute the probability
+of observing $\overline{n}$ non converted reads.
+
+#Gimli: greedy methylation levels
+
+A numerical example
+
+```{r echo=F}
+df=data.frame(rep("chr1",5),1:5,c(10,20,25,20,0),c(10,0,5,20,20))
+names(df)<-c("chrom","pos","nc","c")
+```
+
+```{r}
+df
+```
+
+-------------
+
+```{r echo=F}
+df<-within(df,theta<-nc/(nc+c))
+```
+
+```{r}
+df
+```
+
+-----------------
+
+
+
+
+
