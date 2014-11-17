@@ -45,6 +45,15 @@ df
 
 -----------------
 
+the likelyhood is 
+
+```{r echo=F}
+df<-within(df,loglik<-dbinom(nc,nc+c,theta,log=T))
+```
+
+```{r}
+df
+```
 
 
 
