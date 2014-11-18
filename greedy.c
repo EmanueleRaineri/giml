@@ -84,10 +84,12 @@ float delta_lik( node* el, float* theta, int* nc, int* c ){
 		sumtheta+=theta[i];		
 	}
 	avgtheta=sumtheta/(el->next->to - el->from +1);
+	fprintf(stderr,"%d->%d avg theta=%f\n",el->segment_id,el->next->segment_id,avgtheta);
 	el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],avgtheta);
 	}
+	fprintf(stderr,"%d->%d total lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
 	el->delta=el->delta - el->loglik - el->next->loglik;
 	return (el->delta);
 }
@@ -107,7 +109,7 @@ void list_of_file(char* fname,node* head, int nlines,
 		el->from = i;
 		el->to = i;
 		el->loglik = 0 ;
-		el->delta=0;
+		el->delta = 0 ;
 		el->segment_id = i;
 		el->next = malloc(sizeof(node));
 		el->next->prev = el;
@@ -197,6 +199,7 @@ int main(int argc, char* argv[]){
 			maxn->to = el2->to;
 			update_lik(maxn,theta,nc,c);
 			free(el2);
+			
 			/* change local deltas */
 			if (maxn->prev != NULL){
 				delta_lik(maxn->prev,theta,nc,c);
