@@ -39,22 +39,21 @@ float dbinom(int x, int size, float p){
 }
 
 
-void print_list(node* head, float lambda){
+int print_list(node* head, float lambda){
 	
+	int le = 0;	
 	node* el = head;
 	while(el!=NULL){
-	
 		printf("%d\t",el->segment_id);
 		printf("%d\t",el->from);
 		printf("%d\t",el->to);
 		printf("%.4f\t",el->loglik);
 		printf("%.4f\t",el->delta);
 		printf("%.4f\n",lambda);
-
-		
+		le++;
 		el = el->next;
 	}
-
+	return(le);
 }
 
 float update_lik(node* el, float* theta, int* nc, int* c){
@@ -130,10 +129,31 @@ void print_node(node* el){
 }
 
 
+int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float* theta){
+	node *el;
+	int i,n,le=0;
+	float mintheta,maxtheta,avgtheta,t;
+	for( el=head; el!=NULL; el=el->next ){
+		n = el->to-el->from+1;
+		avgtheta=0;mintheta=FLT_MAX;maxtheta=-FLT_MAX;
+		for ( i=el->from; i<=el->to; i++ ){
+			t=theta[i];
+			avgtheta+=t;
+			if (t>maxtheta) maxtheta=t;
+			if (t<mintheta) mintheta=t;
+		}
+		avgtheta=avgtheta/n;
+		printf("%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
+		pos[el->from],pos[el->to],n,mintheta,avgtheta,maxtheta,el->loglik,el->delta,lambda);
+		le++;
+	}
+	return(le);
+}
+
 int main(int argc, char* argv[]){
 
 	int i,j=0;
-	int nlines=0;
+	int nlines=0,le;
 	/*count lines*/
 	FILE* in = fopen(argv[1],"r");
 	const int sizeline=1000;
@@ -151,9 +171,10 @@ int main(int argc, char* argv[]){
 	int*    nc=malloc(nlines*sizeof(int));
 	int*    c=malloc(nlines*sizeof(int));
 	int*    segment_id=malloc(nlines*sizeof(int));
+	int ilambda=0;
 	float maxdelta; 
 	float avgtheta;
-	float lambda = 1;
+	float lambda[13] = {0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000};
 	float delta;
 	node* maxn;
 	node* el, *head;
@@ -174,14 +195,14 @@ int main(int argc, char* argv[]){
 			el = el->next;
 	}	
 	/* */
-	print_list(head,0);	
-	while(lambda<10){
+	le=print_list(head,0);	
+	while(1){
 		maxdelta = -FLT_MAX; 
 		for( el=head; el!=NULL; el=el->next ){
 			if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
 		}
 		fprintf(stderr,"max delta:%f\n",maxn->delta);
-		if ((maxn->delta + lambda) >0){
+		if ((maxn->delta + lambda[ilambda]) >0){
 			/* merge */
 			fprintf(stderr,"merging...\n");
 			j++;
@@ -189,9 +210,10 @@ int main(int argc, char* argv[]){
 			for( i=el2->from; i<=el2->to; i++ ){
 				segment_id[i]=maxn->segment_id;
 			}
+			//
 			fprintf(stderr,"maxn before merging\n");
 			print_node(maxn);
-			
+			//
 			maxn->next=el2->next;
 			if (el2->next!=NULL){
 				el2->next->prev=maxn;
@@ -199,7 +221,6 @@ int main(int argc, char* argv[]){
 			maxn->to = el2->to;
 			update_lik(maxn,theta,nc,c);
 			free(el2);
-			
 			/* change local deltas */
 			if (maxn->prev != NULL){
 				delta_lik(maxn->prev,theta,nc,c);
@@ -209,13 +230,17 @@ int main(int argc, char* argv[]){
 			} else {
 				maxn->delta=-1000;
 			}
-			
-			fprintf(stderr,"maxn after merging\n");
-			print_node(maxn);
+			//
+			fprintf( stderr , "maxn after merging\n" );
+			print_node( maxn );
 		} else {
-			print_list(head,lambda);	
-			lambda++;
+			//le=print_list(head,lambda);	
+			le=print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
+			fprintf( stderr , "%d segment(s)\n" , le );
+			if (ilambda<12)
+				ilambda++;
+			else break;
 		}	
 	}
-	fprintf(stderr,"%d merging operation(s)\n",j);
+	fprintf( stderr , "%d merging operation(s)\n" , j );
 }
