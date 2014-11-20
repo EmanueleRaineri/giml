@@ -71,8 +71,7 @@ float update_lik(node* el, float* theta, int* nc, int* c){
 	return (avgtheta);
 }
 
-
-float delta_lik( node* el, float* theta, int* nc, int* c ){
+float delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
 	int i;
 	float sumtheta=0,avgtheta;
 	if (el->next==NULL) {
@@ -87,9 +86,13 @@ float delta_lik( node* el, float* theta, int* nc, int* c ){
 	el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],avgtheta);
+		fprintf(stderr,"%d : %f\t",pos[i],el->delta);
 	}
+	fprintf(stderr,"\n");
 	fprintf(stderr,"%d->%d total lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
+	fprintf(stderr,"%d->%d  lik1=%f lik2=%f\n",el->segment_id,el->next->segment_id,el->loglik,el->next->loglik);
 	el->delta=el->delta - el->loglik - el->next->loglik;
+	fprintf(stderr,"%d->%d delta lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
 	return (el->delta);
 }
 
@@ -128,7 +131,6 @@ void print_node(node* el){
 		fprintf(stderr,"-------------\n");
 }
 
-
 int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float* theta){
 	node *el;
 	int i,n,le=0;
@@ -151,7 +153,6 @@ int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float
 }
 
 int main(int argc, char* argv[]){
-
 	int i,j=0;
 	int nlines=0,le;
 	/*count lines*/
@@ -183,17 +184,27 @@ int main(int argc, char* argv[]){
 	el=head;
 	//
 	list_of_file(argv[1],head,nlines,theta,pos,nc,c,segment_id);
-	// initialize delta, lik
+	// initialize  lik
 	el=head;
 	while(el!=NULL){
+			//if (el->next==NULL) {
+			//	el->delta=-1000;
+			//	break;
+			//}
+			avgtheta=update_lik(el,theta,nc,c);
+			//delta=delta_lik(el,pos,theta,nc,c);
+			el = el->next;
+	}
+	//initialize delta
+	el=head;
+	while(1){
 			if (el->next==NULL) {
 				el->delta=-1000;
 				break;
 			}
-			avgtheta=update_lik(el,theta,nc,c);
-			delta=delta_lik(el,theta,nc,c);
+			delta=delta_lik(el,pos,theta,nc,c);
 			el = el->next;
-	}	
+	}
 	/* */
 	le=print_list(head,0);	
 	while(1){
@@ -207,7 +218,7 @@ int main(int argc, char* argv[]){
 			fprintf(stderr,"merging...\n");
 			j++;
 			node* el2=maxn->next;
-			for( i=el2->from; i<=el2->to; i++ ){
+			for( i= el2->from; i <= el2->to; i++ ){
 				segment_id[i]=maxn->segment_id;
 			}
 			//
@@ -219,14 +230,15 @@ int main(int argc, char* argv[]){
 				el2->next->prev=maxn;
 			}
 			maxn->to = el2->to;
-			update_lik(maxn,theta,nc,c);
 			free(el2);
+			//
+			update_lik( maxn , theta , nc , c );
 			/* change local deltas */
 			if (maxn->prev != NULL){
-				delta_lik(maxn->prev,theta,nc,c);
+				delta_lik( maxn->prev , pos , theta , nc , c );
 			}
 			if (maxn->next!=NULL){
-				delta_lik(maxn,theta,nc,c);
+				delta_lik( maxn , pos , theta , nc , c );
 			} else {
 				maxn->delta=-1000;
 			}
@@ -243,4 +255,5 @@ int main(int argc, char* argv[]){
 		}	
 	}
 	fprintf( stderr , "%d merging operation(s)\n" , j );
+	return(0);
 }
