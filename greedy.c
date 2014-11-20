@@ -2,19 +2,28 @@
 #include <stdlib.h>
 #include <float.h>
 #include <math.h>
+#include <errno.h>
+
+#define DEBUG 0
 
 typedef struct node{
-	// from, to refers to indexes for the four arrays mentioned above, 
+	// from, to refer to indexes for the four arrays mentioned above, 
 	// not to real positions along 
 	// the chromosome
 	int from;
 	int to;
 	float loglik;
 	float delta;
+	float sumtheta;
 	int segment_id;
 	struct node* prev;
 	struct node* next;
 } node;
+
+typedef struct heap{
+	unsigned int size;
+	node** heap;
+} heap;
 
 float dbinom(int x, int size, float p){
 	if (p==1){
@@ -37,7 +46,6 @@ float dbinom(int x, int size, float p){
 	//printf("%f\n",bcoeff);
 	return ( bcoeff + x*log(p) + (size-x)*log(1-p) );
 }
-
 
 int print_list(node* head, float lambda){
 	
@@ -62,7 +70,8 @@ float update_lik(node* el, float* theta, int* nc, int* c){
 	for( i = el->from; i <= el->to; i++ ){
 		sumtheta+=theta[i];		
 	}
-	avgtheta=sumtheta/(el->to - el->from +1);
+	el->sumtheta = sumtheta;
+	avgtheta = sumtheta/(el->to - el->from +1);
 	//fprintf(stderr,"avgtheta:%g\n",avgtheta);
 	el->loglik=0;
 	for( i = el->from; i <= el->to; i++ ){
@@ -78,21 +87,22 @@ float delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
 		fprintf(stderr,"el->next==NULL in delta_lik\n");
 		exit(1);
 	}
-	for( i = el->from; i <= el->next->to; i++ ){
-		sumtheta+=theta[i];		
-	}
+	//for( i = el->from; i <= el->next->to; i++ ){
+	//	sumtheta+=theta[i];		
+	//}
+	sumtheta=(el->sumtheta)+(el->next->sumtheta);
 	avgtheta=sumtheta/(el->next->to - el->from +1);
-	fprintf(stderr,"%d->%d avg theta=%f\n",el->segment_id,el->next->segment_id,avgtheta);
+	//fprintf(stderr,"%d->%d avg theta=%f\n",el->segment_id,el->next->segment_id,avgtheta);
 	el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],avgtheta);
-		fprintf(stderr,"%d : %f\t",pos[i],el->delta);
+		//fprintf(stderr,"%d : %f\t",pos[i],el->delta);
 	}
-	fprintf(stderr,"\n");
-	fprintf(stderr,"%d->%d total lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
-	fprintf(stderr,"%d->%d  lik1=%f lik2=%f\n",el->segment_id,el->next->segment_id,el->loglik,el->next->loglik);
+	//fprintf(stderr,"\n");
+	//fprintf(stderr,"%d->%d total lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
+	//fprintf(stderr,"%d->%d  lik1=%f lik2=%f\n",el->segment_id,el->next->segment_id,el->loglik,el->next->loglik);
 	el->delta=el->delta - el->loglik - el->next->loglik;
-	fprintf(stderr,"%d->%d delta lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
+	//fprintf(stderr,"%d->%d delta lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
 	return (el->delta);
 }
 
@@ -152,6 +162,95 @@ int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float
 	return(le);
 }
 
+node* find_max(node* head){
+	float maxdelta; 
+	node* maxn;
+	node* el;
+		maxdelta = -FLT_MAX; 
+		for( el=head; el!=NULL; el=el->next ){
+			if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
+		}
+		if (DEBUG) fprintf(stderr,"max delta:%f\n",maxn->delta);
+	return(maxn);
+}
+
+
+int parent(int i){
+	return ((i-1)/2);
+}
+
+int left(int i){
+	return (2*i+1);
+}
+
+int right(int i){
+	return (2*i+2);
+}
+
+void max_heapify(heap* h, int i){
+	int l = left(i);
+	int r = right(i);
+	int largest;
+	node* tmp;
+	if (l < h->size && h->heap[l]->delta > h->heap[i]->delta ) largest = l;
+	else largest = i;
+	if (r < h->size && h->heap[r]->delta  > h->heap[largest]->delta ) largest=r;
+	if ( largest != i ){
+		tmp = h->heap[largest];
+		h->heap[largest] = h->heap[i];
+		h->heap[i] = tmp;
+		max_heapify(h,largest);
+	}
+}
+
+void heap_increase_key(heap* h , int i , float key ){
+	// in practice use this only for de novo insertion
+	if (  key < h->heap[i]->delta ){
+		fprintf(stderr,"new key smaller than current key\n");
+		exit(1);
+	}
+	h->heap[i]->delta=key;
+	node* tmp;
+	while( i>0 && h->heap[parent(i)]->delta < h->heap[i]->delta   ){
+		tmp=h->heap[i];
+		h->heap[i]=h->heap[parent(i)];
+		h->heap[parent(i)]=tmp;		
+		i=parent(i);
+	}
+}
+
+void max_heap_insert (  heap* h , node* n  ){
+	//assumes a max heap to start with
+	float key = n->delta;
+	h->size++;
+	n->delta=-FLT_MAX;
+	h->heap[h->size] = n;
+	heap_increase_key( h , h->size , key );
+}
+
+void max_heap_delete (heap* h, int i){
+	h->heap[i]=h->heap[h->size-1];
+	h->size--;
+	max_heapify(h,i);
+}
+
+
+void print_heap(heap* h){
+	int i;
+	for (i=0;i<h->size-1;i++){
+		fprintf(stderr,"%d:%.4f ",i,h->heap[i]->delta);
+	}
+	fprintf(stderr,"%d:%.4f\n",h->size-1,h->heap[h->size-1]->delta);
+}
+
+node* heap_extract_max (heap* h){
+	node* maxn = h->heap[0];
+	h->heap[0]=h->heap[h->size-1];
+	h->size--;
+	max_heapify(h,0);
+	return(maxn);
+}
+
 int main(int argc, char* argv[]){
 	int i,j=0;
 	int nlines=0,le;
@@ -167,20 +266,21 @@ int main(int argc, char* argv[]){
 	fprintf(stderr,"nlines:%d\n",nlines);
 	fclose(in);
 	/* 5 static data structures */
-	float*  theta=malloc(nlines*sizeof(float));
-	int*    pos=malloc(nlines*sizeof(int));
-	int*    nc=malloc(nlines*sizeof(int));
-	int*    c=malloc(nlines*sizeof(int));
-	int*    segment_id=malloc(nlines*sizeof(int));
-	int ilambda=0;
-	float maxdelta; 
+	float*  theta = malloc(nlines*sizeof(float));
+	int*    pos = malloc(nlines*sizeof(int));
+	int*    nc = malloc(nlines*sizeof(int));
+	int*    c = malloc(nlines*sizeof(int));
+	int*    segment_id = malloc(nlines*sizeof(int));
+	int ilambda = 0 ;
 	float avgtheta;
 	float lambda[13] = {0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000};
 	float delta;
-	node* maxn;
 	node* el, *head;
 	head=malloc(sizeof(node));
 	head->prev=NULL;
+	heap* h=malloc(sizeof(heap));
+	h->heap=malloc(nlines*sizeof(node*));
+	h->size=0;
 	el=head;
 	//
 	list_of_file(argv[1],head,nlines,theta,pos,nc,c,segment_id);
@@ -203,16 +303,27 @@ int main(int argc, char* argv[]){
 				break;
 			}
 			delta=delta_lik(el,pos,theta,nc,c);
+			max_heap_insert(h,el);
 			el = el->next;
 	}
 	/* */
 	le=print_list(head,0);	
+	node* maxn;
+	node* maxn2;
+	int loopc=0;
+	print_heap(h);
 	while(1){
-		maxdelta = -FLT_MAX; 
-		for( el=head; el!=NULL; el=el->next ){
-			if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
+		//maxdelta = -FLT_MAX; 
+		//for( el=head; el!=NULL; el=el->next ){
+		//	if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
+		//}
+		//if (DEBUG) fprintf(stderr,"max delta:%f\n",maxn->delta);
+		maxn = find_max(head);
+		if (loopc==0){
+			maxn2 = heap_extract_max(h);
+			fprintf(stderr,"%.4f\t%.4f\n",maxn->loglik,maxn2->loglik);
+			print_heap(h);
 		}
-		fprintf(stderr,"max delta:%f\n",maxn->delta);
 		if ((maxn->delta + lambda[ilambda]) >0){
 			/* merge */
 			fprintf(stderr,"merging...\n");
@@ -222,8 +333,10 @@ int main(int argc, char* argv[]){
 				segment_id[i]=maxn->segment_id;
 			}
 			//
-			fprintf(stderr,"maxn before merging\n");
-			print_node(maxn);
+			if (DEBUG) {
+				fprintf(stderr,"maxn before merging\n");
+				print_node(maxn);
+			}
 			//
 			maxn->next=el2->next;
 			if (el2->next!=NULL){
@@ -243,8 +356,10 @@ int main(int argc, char* argv[]){
 				maxn->delta=-1000;
 			}
 			//
-			fprintf( stderr , "maxn after merging\n" );
-			print_node( maxn );
+			if (DEBUG) {
+				fprintf( stderr , "maxn after merging\n" );
+				print_node( maxn );
+			}
 		} else {
 			//le=print_list(head,lambda);	
 			le=print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
@@ -253,7 +368,9 @@ int main(int argc, char* argv[]){
 				ilambda++;
 			else break;
 		}	
+		loopc++;
 	}
-	fprintf( stderr , "%d merging operation(s)\n" , j );
+	//print_heap(h);
+	fprintf( stderr , "%d loops %d merging operation(s)\n" , loopc, j );
 	return(0);
 }
