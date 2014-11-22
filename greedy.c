@@ -16,6 +16,7 @@ typedef struct node{
 	float delta;
 	float sumtheta;
 	int segment_id;
+	int heapidx;
 	struct node* prev;
 	struct node* next;
 } node;
@@ -48,7 +49,6 @@ float dbinom(int x, int size, float p){
 }
 
 int print_list(node* head, float lambda){
-	
 	int le = 0;	
 	node* el = head;
 	while(el!=NULL){
@@ -174,7 +174,6 @@ node* find_max(node* head){
 	return(maxn);
 }
 
-
 int parent(int i){
 	return ((i-1)/2);
 }
@@ -198,7 +197,9 @@ void max_heapify(heap* h, int i){
 	if ( largest != i ){
 		tmp = h->heap[largest];
 		h->heap[largest] = h->heap[i];
+		h->heap[largest]->heapidx=largest;
 		h->heap[i] = tmp;
+		h->heap[i]->heapidx=i;
 		max_heapify(h,largest);
 	}
 }
@@ -212,40 +213,52 @@ void heap_increase_key(heap* h , int i , float key ){
 	h->heap[i]->delta=key;
 	node* tmp;
 	while( i>0 && h->heap[parent(i)]->delta < h->heap[i]->delta   ){
-		tmp=h->heap[i];
-		h->heap[i]=h->heap[parent(i)];
-		h->heap[parent(i)]=tmp;		
+		tmp = h->heap[i];
+		h->heap[i] = h->heap[parent(i)];
+		h->heap[parent(i)] = tmp;	
+		h->heap[i]->heapidx = i;
+		h->heap[parent(i)]->heapidx = parent(i);	
 		i=parent(i);
 	}
 }
 
-void max_heap_insert (  heap* h , node* n  ){
+void heap_insert (  heap* h , node* n  ){
 	//assumes a max heap to start with
 	float key = n->delta;
 	h->size++;
 	n->delta=-FLT_MAX;
-	h->heap[h->size] = n;
-	heap_increase_key( h , h->size , key );
+	h->heap[h->size-1] = n;
+	h->heap[h->size-1]->heapidx=h->size-1;
+	heap_increase_key( h , h->size-1 , key );
 }
 
-void max_heap_delete (heap* h, int i){
+void heap_delete (heap* h, int i){
 	h->heap[i]=h->heap[h->size-1];
+	h->heap[i]->heapidx=i;
 	h->size--;
 	max_heapify(h,i);
 }
 
+int heap_wrong_index(heap* h){
+	int i;
+	for(i=0;i<h->size;i++){
+		if (h->heap[i]->heapidx!=i) return(1);
+	}
+	return(0);
+}
 
 void print_heap(heap* h){
 	int i;
 	for (i=0;i<h->size-1;i++){
-		fprintf(stderr,"%d:%.4f ",i,h->heap[i]->delta);
+		fprintf(stderr,"%d:%d:%.4f ",i,h->heap[i]->heapidx,h->heap[i]->delta);
 	}
-	fprintf(stderr,"%d:%.4f\n",h->size-1,h->heap[h->size-1]->delta);
+	fprintf(stderr,"%d:%d:%.4f\n",h->size-1,h->heap[h->size-1]->heapidx,h->heap[h->size-1]->delta);
 }
 
 node* heap_extract_max (heap* h){
 	node* maxn = h->heap[0];
 	h->heap[0]=h->heap[h->size-1];
+	h->heap[0]->heapidx=0;
 	h->size--;
 	max_heapify(h,0);
 	return(maxn);
@@ -303,7 +316,7 @@ int main(int argc, char* argv[]){
 				break;
 			}
 			delta=delta_lik(el,pos,theta,nc,c);
-			max_heap_insert(h,el);
+			heap_insert(h,el);
 			el = el->next;
 	}
 	/* */
@@ -311,22 +324,22 @@ int main(int argc, char* argv[]){
 	node* maxn;
 	node* maxn2;
 	int loopc=0;
-	print_heap(h);
+	if (DEBUG) print_heap(h);
 	while(1){
 		//maxdelta = -FLT_MAX; 
 		//for( el=head; el!=NULL; el=el->next ){
 		//	if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
 		//}
 		//if (DEBUG) fprintf(stderr,"max delta:%f\n",maxn->delta);
+		print_heap(h);
 		maxn = find_max(head);
-		if (loopc==0){
-			maxn2 = heap_extract_max(h);
-			fprintf(stderr,"%.4f\t%.4f\n",maxn->loglik,maxn2->loglik);
-			print_heap(h);
-		}
+		//if (loopc==0){
+		maxn2 = heap_extract_max(h);
+		fprintf(stderr,"%.4f\t%.4f\n",maxn->delta,maxn2->delta);
+		//}
 		if ((maxn->delta + lambda[ilambda]) >0){
 			/* merge */
-			fprintf(stderr,"merging...\n");
+			fprintf(stderr,"merging %d\n",maxn->segment_id);
 			j++;
 			node* el2=maxn->next;
 			for( i= el2->from; i <= el2->to; i++ ){
@@ -347,22 +360,28 @@ int main(int argc, char* argv[]){
 			//
 			update_lik( maxn , theta , nc , c );
 			/* change local deltas */
-			if (maxn->prev != NULL){
+			if ( maxn->prev != NULL ){
 				delta_lik( maxn->prev , pos , theta , nc , c );
+				int previdx = maxn->prev->heapidx;
+				heap_delete(h,previdx);
+				heap_insert(h,maxn->prev);
 			}
-			if (maxn->next!=NULL){
+			if ( maxn->next != NULL ){
 				delta_lik( maxn , pos , theta , nc , c );
 			} else {
 				maxn->delta=-1000;
 			}
-			//
 			if (DEBUG) {
 				fprintf( stderr , "maxn after merging\n" );
 				print_node( maxn );
 			}
+			//I have to insert maxn and perhaps maxn->prev
+			// XXXX perhaps problems here. Order of insertion/deletion?
+			heap_insert(h,maxn);
 		} else {
 			//le=print_list(head,lambda);	
-			le=print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
+			heap_insert(h,maxn);
+			le = print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
 			fprintf( stderr , "%d segment(s)\n" , le );
 			if (ilambda<12)
 				ilambda++;
@@ -370,7 +389,6 @@ int main(int argc, char* argv[]){
 		}	
 		loopc++;
 	}
-	//print_heap(h);
-	fprintf( stderr , "%d loops %d merging operation(s)\n" , loopc, j );
+	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, j );
 	return(0);
 }
