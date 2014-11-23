@@ -3,8 +3,9 @@
 #include <float.h>
 #include <math.h>
 #include <errno.h>
+#include <assert.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 typedef struct node{
 	// from, to refer to indexes for the four arrays mentioned above, 
@@ -131,13 +132,13 @@ void list_of_file(char* fname,node* head, int nlines,
 	fclose(in);
 }
 
-void print_node(node* el){
+void print_node(node* el, int* pos){
 		fprintf(stderr,"-------------\n");
-		fprintf(stderr,"%d\t",el->segment_id);
-		fprintf(stderr,"%d\t",el->from);
-		fprintf(stderr,"%d\t",el->to);
-		fprintf(stderr,"%.4f\t",el->loglik);
-		fprintf(stderr,"%.4f\n",el->delta);
+		fprintf(stderr,"id:%d\t",el->segment_id);
+		fprintf(stderr,"from:%d[%d]\t",el->from,pos[el->from]);
+		fprintf(stderr,"to:%d[%d]\t",el->to,pos[el->to]);
+		fprintf(stderr,"loglik:%.4f\t",el->loglik);
+		fprintf(stderr,"delta:%.4f\n",el->delta);
 		fprintf(stderr,"-------------\n");
 }
 
@@ -166,11 +167,11 @@ node* find_max(node* head){
 	float maxdelta; 
 	node* maxn;
 	node* el;
-		maxdelta = -FLT_MAX; 
-		for( el=head; el!=NULL; el=el->next ){
-			if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
-		}
-		if (DEBUG) fprintf(stderr,"max delta:%f\n",maxn->delta);
+	maxdelta = -FLT_MAX; 
+	for( el=head; el!=NULL; el=el->next ){
+		if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
+	}
+	if (DEBUG) fprintf(stderr,"max delta:%f\n",maxn->delta);
 	return(maxn);
 }
 
@@ -184,6 +185,14 @@ int left(int i){
 
 int right(int i){
 	return (2*i+2);
+}
+
+int heap_wrong_index(heap* h){
+	int i;
+	for(i=0;i<h->size;i++){
+		if (h->heap[i]->heapidx!=i) return(1);
+	}
+	return(0);
 }
 
 void max_heapify(heap* h, int i){
@@ -206,13 +215,14 @@ void max_heapify(heap* h, int i){
 
 void heap_increase_key(heap* h , int i , float key ){
 	// in practice use this only for de novo insertion
+	assert (heap_wrong_index(h)==0);
 	if (  key < h->heap[i]->delta ){
 		fprintf(stderr,"new key smaller than current key\n");
 		exit(1);
 	}
 	h->heap[i]->delta=key;
 	node* tmp;
-	while( i>0 && h->heap[parent(i)]->delta < h->heap[i]->delta   ){
+	while( i > 0 && h->heap[parent(i)]->delta < h->heap[i]->delta   ){
 		tmp = h->heap[i];
 		h->heap[i] = h->heap[parent(i)];
 		h->heap[parent(i)] = tmp;	
@@ -220,16 +230,20 @@ void heap_increase_key(heap* h , int i , float key ){
 		h->heap[parent(i)]->heapidx = parent(i);	
 		i=parent(i);
 	}
+	assert (heap_wrong_index(h)==0);
 }
 
 void heap_insert (  heap* h , node* n  ){
 	//assumes a max heap to start with
+	assert (heap_wrong_index(h)==0);
 	float key = n->delta;
 	h->size++;
 	n->delta=-FLT_MAX;
 	h->heap[h->size-1] = n;
-	h->heap[h->size-1]->heapidx=h->size-1;
+	h->heap[h->size-1]->heapidx = h->size-1;
+	assert (heap_wrong_index(h)==0);
 	heap_increase_key( h , h->size-1 , key );
+	assert (heap_wrong_index(h)==0);
 }
 
 void heap_delete (heap* h, int i){
@@ -239,13 +253,6 @@ void heap_delete (heap* h, int i){
 	max_heapify(h,i);
 }
 
-int heap_wrong_index(heap* h){
-	int i;
-	for(i=0;i<h->size;i++){
-		if (h->heap[i]->heapidx!=i) return(1);
-	}
-	return(0);
-}
 
 void print_heap(heap* h){
 	int i;
@@ -265,7 +272,7 @@ node* heap_extract_max (heap* h){
 }
 
 int main(int argc, char* argv[]){
-	int i,j=0;
+	int i,mergec=0;
 	int nlines=0,le;
 	/*count lines*/
 	FILE* in = fopen(argv[1],"r");
@@ -317,6 +324,7 @@ int main(int argc, char* argv[]){
 			}
 			delta=delta_lik(el,pos,theta,nc,c);
 			heap_insert(h,el);
+			assert (heap_wrong_index(h)==0);
 			el = el->next;
 	}
 	/* */
@@ -325,6 +333,7 @@ int main(int argc, char* argv[]){
 	node* maxn2;
 	int loopc=0;
 	if (DEBUG) print_heap(h);
+	int idx;
 	while(1){
 		//maxdelta = -FLT_MAX; 
 		//for( el=head; el!=NULL; el=el->next ){
@@ -335,52 +344,62 @@ int main(int argc, char* argv[]){
 		maxn = find_max(head);
 		//if (loopc==0){
 		maxn2 = heap_extract_max(h);
-		fprintf(stderr,"%.4f\t%.4f\n",maxn->delta,maxn2->delta);
+		assert (heap_wrong_index(h)==0);
+		if ( fabs(maxn->delta-maxn2->delta) > 1e-15 ){
+			fprintf(stderr,"oops:%.4f\t%.4f\n",maxn->delta,maxn2->delta);
+			exit(1);
+		}
 		//}
-		if ((maxn->delta + lambda[ilambda]) >0){
-			/* merge */
-			fprintf(stderr,"merging %d\n",maxn->segment_id);
-			j++;
+		if ( (maxn->delta + lambda[ilambda]) >0 ){
+			/***** merge ****/
+			fprintf( stderr , "merging %d\n", maxn->segment_id );
+			mergec++;
 			node* el2=maxn->next;
-			for( i= el2->from; i <= el2->to; i++ ){
-				segment_id[i]=maxn->segment_id;
+			for( i= el2->from ; i <= el2->to ; i++ ){
+				segment_id[i] = maxn->segment_id;
 			}
-			//
 			if (DEBUG) {
 				fprintf(stderr,"maxn before merging\n");
-				print_node(maxn);
+				print_node( maxn , pos );
 			}
-			//
-			maxn->next=el2->next;
-			if (el2->next!=NULL){
-				el2->next->prev=maxn;
+			maxn->next = el2->next;
+			if ( el2->next != NULL ){
+				el2->next->prev = maxn ;
 			}
 			maxn->to = el2->to;
-			free(el2);
-			//
+			idx = el2->heapidx;
+			heap_delete( h , idx );
+			assert (heap_wrong_index(h)==0);
+			free( el2 );
 			update_lik( maxn , theta , nc , c );
-			/* change local deltas */
 			if ( maxn->prev != NULL ){
 				delta_lik( maxn->prev , pos , theta , nc , c );
-				int previdx = maxn->prev->heapidx;
-				heap_delete(h,previdx);
+				idx = maxn->prev->heapidx;
+				heap_delete(h,idx);
 				heap_insert(h,maxn->prev);
+				assert (heap_wrong_index(h)==0);
 			}
-			if ( maxn->next != NULL ){
-				delta_lik( maxn , pos , theta , nc , c );
-			} else {
-				maxn->delta=-1000;
-			}
+			//if ( maxn->next != NULL ){
+			delta_lik( maxn , pos , theta , nc , c );
+			assert (heap_wrong_index(h)==0);
+			//} else {
+			//	maxn->delta=-1000;
+			//}
 			if (DEBUG) {
 				fprintf( stderr , "maxn after merging\n" );
-				print_node( maxn );
+				print_node( maxn ,pos );
+				print_heap(h);
 			}
+			if (DEBUG) print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
 			//I have to insert maxn and perhaps maxn->prev
 			// XXXX perhaps problems here. Order of insertion/deletion?
 			heap_insert(h,maxn);
+			assert (heap_wrong_index(h)==0);
 		} else {
 			//le=print_list(head,lambda);	
-			heap_insert(h,maxn);
+			assert (heap_wrong_index(h)==0);
+			heap_insert( h , maxn );
+			assert (heap_wrong_index(h)==0);
 			le = print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
 			fprintf( stderr , "%d segment(s)\n" , le );
 			if (ilambda<12)
@@ -389,6 +408,6 @@ int main(int argc, char* argv[]){
 		}	
 		loopc++;
 	}
-	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, j );
+	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
 	return(0);
 }
