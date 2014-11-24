@@ -45,7 +45,6 @@ float dbinom(int x, int size, float p){
 		}
 	}
 	float bcoeff = lgammaf(size+1) - lgammaf(x+1) - lgammaf(size-x+1);
-	//printf("%f\n",bcoeff);
 	return ( bcoeff + x*log(p) + (size-x)*log(1-p) );
 }
 
@@ -65,7 +64,7 @@ int print_list(node* head, float lambda){
 	return(le);
 }
 
-float update_lik(node* el, float* theta, int* nc, int* c){
+void update_lik(node* el, float* theta, int* nc, int* c){
 	float sumtheta=0,avgtheta;
 	int i;
 	for( i = el->from; i <= el->to; i++ ){
@@ -73,38 +72,26 @@ float update_lik(node* el, float* theta, int* nc, int* c){
 	}
 	el->sumtheta = sumtheta;
 	avgtheta = sumtheta/(el->to - el->from +1);
-	//fprintf(stderr,"avgtheta:%g\n",avgtheta);
 	el->loglik=0;
 	for( i = el->from; i <= el->to; i++ ){
 		el->loglik+=dbinom(nc[i],nc[i]+c[i],avgtheta);
 	}
-	return (avgtheta);
 }
 
-float delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
+void delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
 	int i;
 	float sumtheta=0,avgtheta;
 	if (el->next==NULL) {
 		fprintf(stderr,"el->next==NULL in delta_lik\n");
-		exit(1);
+		return;
 	}
-	//for( i = el->from; i <= el->next->to; i++ ){
-	//	sumtheta+=theta[i];		
-	//}
 	sumtheta=(el->sumtheta)+(el->next->sumtheta);
 	avgtheta=sumtheta/(el->next->to - el->from +1);
-	//fprintf(stderr,"%d->%d avg theta=%f\n",el->segment_id,el->next->segment_id,avgtheta);
 	el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],avgtheta);
-		//fprintf(stderr,"%d : %f\t",pos[i],el->delta);
 	}
-	//fprintf(stderr,"\n");
-	//fprintf(stderr,"%d->%d total lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
-	//fprintf(stderr,"%d->%d  lik1=%f lik2=%f\n",el->segment_id,el->next->segment_id,el->loglik,el->next->loglik);
 	el->delta=el->delta - el->loglik - el->next->loglik;
-	//fprintf(stderr,"%d->%d delta lik=%f\n",el->segment_id,el->next->segment_id,el->delta);
-	return (el->delta);
 }
 
 void list_of_file(char* fname,node* head, int nlines, 
@@ -148,10 +135,9 @@ int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float
 	float mintheta,maxtheta,avgtheta,t;
 	for( el=head; el!=NULL; el=el->next ){
 		n = el->to-el->from+1;
-		avgtheta=0;mintheta=FLT_MAX;maxtheta=-FLT_MAX;
+		avgtheta=el->sumtheta/n;mintheta=FLT_MAX;maxtheta=-FLT_MAX;
 		for ( i=el->from; i<=el->to; i++ ){
 			t=theta[i];
-			avgtheta+=t;
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
 		}
@@ -190,7 +176,10 @@ int right(int i){
 int heap_wrong_index(heap* h){
 	int i;
 	for(i=0;i<h->size;i++){
-		if (h->heap[i]->heapidx!=i) return(1);
+		if (h->heap[i]->heapidx!=i) {
+			fprintf(stderr,"wrong index at %d\n",i);
+			return(1);
+		}
 	}
 	return(0);
 }
@@ -206,11 +195,12 @@ void max_heapify(heap* h, int i){
 	if ( largest != i ){
 		tmp = h->heap[largest];
 		h->heap[largest] = h->heap[i];
-		h->heap[largest]->heapidx=largest;
 		h->heap[i] = tmp;
 		h->heap[i]->heapidx=i;
+		h->heap[largest]->heapidx=largest;
 		max_heapify(h,largest);
 	}
+	assert (heap_wrong_index(h)==0);
 }
 
 void heap_increase_key(heap* h , int i , float key ){
@@ -218,6 +208,10 @@ void heap_increase_key(heap* h , int i , float key ){
 	assert (heap_wrong_index(h)==0);
 	if (  key < h->heap[i]->delta ){
 		fprintf(stderr,"new key smaller than current key\n");
+		exit(1);
+	}
+	if (i<0 || i>=h->size){
+		fprintf(stderr,"position %d does not exist\n",i);
 		exit(1);
 	}
 	h->heap[i]->delta=key;
@@ -243,20 +237,27 @@ void heap_insert (  heap* h , node* n  ){
 	h->heap[h->size-1]->heapidx = h->size-1;
 	assert (heap_wrong_index(h)==0);
 	heap_increase_key( h , h->size-1 , key );
+	assert (check_heap_integrity(h)==0);
 	assert (heap_wrong_index(h)==0);
 }
 
 void heap_delete (heap* h, int i){
+	assert (check_heap_integrity(h)==0);
 	h->heap[i]=h->heap[h->size-1];
 	h->heap[i]->heapidx=i;
 	h->size--;
 	max_heapify(h,i);
+	assert (check_heap_integrity(h)==0);
+	assert (heap_wrong_index(h)==0);
 }
 
-
 void print_heap(heap* h){
+	if (h->size==0) {
+		fprintf(stderr,"empty heap\n");
+		return;	
+	}
 	int i;
-	for (i=0;i<h->size-1;i++){
+	for (i=0; i< h->size-1; i++){
 		fprintf(stderr,"%d:%d:%.4f ",i,h->heap[i]->heapidx,h->heap[i]->delta);
 	}
 	fprintf(stderr,"%d:%d:%.4f\n",h->size-1,h->heap[h->size-1]->heapidx,h->heap[h->size-1]->delta);
@@ -268,7 +269,35 @@ node* heap_extract_max (heap* h){
 	h->heap[0]->heapidx=0;
 	h->size--;
 	max_heapify(h,0);
+	assert (heap_wrong_index(h)==0);
 	return(maxn);
+}
+
+int check_heap_integrity(heap* h){
+	int i,l,r,p;
+	for(i=h->size-1;i>0;i--){
+		p=parent(i);
+		if (h->heap[i]->delta>h->heap[p]->delta){
+			fprintf(stderr,"node %d not good\n",p);
+			fprintf(stderr,"parent(%d):%f,left(%d):%f,right(%d):%f\n",
+				p,h->heap[p]->delta,left(p),
+				h->heap[left(p)]->delta,
+				right(p),h->heap[right(p)]->delta);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+float find_heap_max(heap* h){
+	int i;
+	float m=-FLT_MAX;
+	for(i=0;i<h->size;i++){
+		if (h->heap[i]->delta>m) {
+			m=h->heap[i]->delta;
+		}
+	}
+	return(m);
 }
 
 int main(int argc, char* argv[]){
@@ -307,12 +336,7 @@ int main(int argc, char* argv[]){
 	// initialize  lik
 	el=head;
 	while(el!=NULL){
-			//if (el->next==NULL) {
-			//	el->delta=-1000;
-			//	break;
-			//}
-			avgtheta=update_lik(el,theta,nc,c);
-			//delta=delta_lik(el,pos,theta,nc,c);
+			update_lik(el,theta,nc,c);
 			el = el->next;
 	}
 	//initialize delta
@@ -320,9 +344,10 @@ int main(int argc, char* argv[]){
 	while(1){
 			if (el->next==NULL) {
 				el->delta=-1000;
+				heap_insert(h,el);
 				break;
 			}
-			delta=delta_lik(el,pos,theta,nc,c);
+			delta_lik(el,pos,theta,nc,c);
 			heap_insert(h,el);
 			assert (heap_wrong_index(h)==0);
 			el = el->next;
@@ -334,22 +359,29 @@ int main(int argc, char* argv[]){
 	int loopc=0;
 	if (DEBUG) print_heap(h);
 	int idx;
-	while(1){
-		//maxdelta = -FLT_MAX; 
-		//for( el=head; el!=NULL; el=el->next ){
-		//	if (el->delta > maxdelta) { maxdelta=el->delta; maxn=el; }
-		//}
-		//if (DEBUG) fprintf(stderr,"max delta:%f\n",maxn->delta);
-		print_heap(h);
-		maxn = find_max(head);
-		//if (loopc==0){
-		maxn2 = heap_extract_max(h);
-		assert (heap_wrong_index(h)==0);
-		if ( fabs(maxn->delta-maxn2->delta) > 1e-15 ){
-			fprintf(stderr,"oops:%.4f\t%.4f\n",maxn->delta,maxn2->delta);
+	while(1 && le>1){
+		if (check_heap_integrity(h)) {
+			fprintf(stderr,"no heap integrity\n");
 			exit(1);
 		}
-		//}
+		print_heap(h);
+		maxn = find_max(head);
+		maxn2 = heap_extract_max(h);
+		if (check_heap_integrity(h)) {
+			fprintf(stderr,"no heap integrity\n");
+			exit(1);
+		}
+		assert (heap_wrong_index(h)==0);
+		if ( fabs(maxn->delta-maxn2->delta) > 1e-15 ){
+			fprintf(stderr,"oops(value):%.4f\t%.4f\n",maxn->delta,maxn2->delta);
+			exit(1);
+		}
+		if (maxn!=maxn2){
+			fprintf(stderr,"oops(address):%p\t%p\n",maxn,maxn2);
+			fprintf(stderr,"maxn=%.4f\tmaxn2=%.4f\n",maxn->delta,maxn2->delta);
+			maxn=maxn2;
+		}
+		if (maxn->prev==NULL && maxn->next==NULL) break;
 		if ( (maxn->delta + lambda[ilambda]) >0 ){
 			/***** merge ****/
 			fprintf( stderr , "merging %d\n", maxn->segment_id );
@@ -369,6 +401,7 @@ int main(int argc, char* argv[]){
 			maxn->to = el2->to;
 			idx = el2->heapidx;
 			heap_delete( h , idx );
+			assert (check_heap_integrity(h)==0);
 			assert (heap_wrong_index(h)==0);
 			free( el2 );
 			update_lik( maxn , theta , nc , c );
@@ -377,30 +410,24 @@ int main(int argc, char* argv[]){
 				idx = maxn->prev->heapidx;
 				heap_delete(h,idx);
 				heap_insert(h,maxn->prev);
+				assert (check_heap_integrity(h)==0);
 				assert (heap_wrong_index(h)==0);
 			}
-			//if ( maxn->next != NULL ){
 			delta_lik( maxn , pos , theta , nc , c );
 			assert (heap_wrong_index(h)==0);
-			//} else {
-			//	maxn->delta=-1000;
-			//}
 			if (DEBUG) {
 				fprintf( stderr , "maxn after merging\n" );
 				print_node( maxn ,pos );
 				print_heap(h);
 			}
 			if (DEBUG) print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
-			//I have to insert maxn and perhaps maxn->prev
-			// XXXX perhaps problems here. Order of insertion/deletion?
-			heap_insert(h,maxn);
-			assert (heap_wrong_index(h)==0);
-		} else {
-			//le=print_list(head,lambda);	
-			assert (heap_wrong_index(h)==0);
 			heap_insert( h , maxn );
-			assert (heap_wrong_index(h)==0);
-			le = print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
+			assert ( heap_wrong_index(h)==0 );
+		} else {
+			assert ( heap_wrong_index(h)==0 );
+			heap_insert( h , maxn );
+			assert ( heap_wrong_index(h)==0 );
+			le = print_segmentation( head , lambda[ilambda] , pos , nc , c , theta );
 			fprintf( stderr , "%d segment(s)\n" , le );
 			if (ilambda<12)
 				ilambda++;
