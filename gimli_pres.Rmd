@@ -57,4 +57,56 @@ df
 
 
 
+---------------
+
+the algorithms builds a list containing all the segments.
+at the beginning, each methylated positions is a segment, containing one point only.
+
+---------------
+
+one proceeds along the list of segments, computing how much it would cost to
+join two consecutive ones.
+
+---------------
+
+wheneve I join $2$ segments, the total likelihood of the model diminishes
+
+For example if one joins points $1$ and $2$, one has
+\[\matcal{L}_{12}^\prime=\mathcal{L}-\mathcal{L}_1-\mathcal{L}_2+\mathcal{L}_{12}\]
+
+where $\mathcal{L}_{12}\leq \mathcal{L}_1+\mathcal{L}_2$.
+
+----------------------
+on the other hand, one has to account for the fact that 
+now the model is less complex, which can be a good thing.
+
+So one adds to the previous sum a term $\lambda$ which gives
+a prize to less complex models so that the new likelihood becomes
+
+\[\matcal{L}_{12}^\prime=\mathcal{L}-\mathcal{L}_1-\mathcal{L}_2+\mathcal{L}_{12}+\lambda\]
+
+--------------------
+One goes on , computing $\matcal{L}_{xy}^\prime$ for all the pairs $x,y$ of consecutive segments.
+then find out which is the gratess of all these. Is is positive? If so, join the segments and start
+again.
+
+---------------
+
+what happens if I can't find a positive L?
+
+
+------------------
+
+peek at  the max from the heap, and if there's no merging
+put it back again (heap is unmodified).
+
+---------------------------
+if there's merging, it can be of $3$ types:
+
+either this
+
+or this
+
+or this
+
 

@@ -3,10 +3,10 @@
 #include <float.h>
 #include <math.h>
 #include <errno.h>
+//#define NDEBUG 1
 #include <assert.h>
 
 #define DEBUG 1
-
 typedef struct node{
 	// from, to refer to indexes for the four arrays mentioned above, 
 	// not to real positions along 
@@ -82,7 +82,8 @@ void delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
 	int i;
 	float sumtheta=0,avgtheta;
 	if (el->next==NULL) {
-		fprintf(stderr,"el->next==NULL in delta_lik\n");
+		fprintf(stderr,"el->next==NULL in delta_lik (el->delta=%.4f)\n",el->delta);
+		el->delta=-FLT_MAX;
 		return;
 	}
 	sumtheta=(el->sumtheta)+(el->next->sumtheta);
@@ -129,7 +130,7 @@ void print_node(node* el, int* pos){
 		fprintf(stderr,"-------------\n");
 }
 
-int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float* theta){
+int print_segmentation(FILE* stream, node* head, float lambda, int* pos, int*nc, int* c, float* theta){
 	node *el;
 	int i,n,le=0;
 	float mintheta,maxtheta,avgtheta,t;
@@ -141,8 +142,7 @@ int print_segmentation(node* head, float lambda, int* pos, int*nc, int* c, float
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
 		}
-		avgtheta=avgtheta/n;
-		printf("%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
+		fprintf(stream,"%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
 		pos[el->from],pos[el->to],n,mintheta,avgtheta,maxtheta,el->loglik,el->delta,lambda);
 		le++;
 	}
@@ -200,12 +200,12 @@ void max_heapify(heap* h, int i){
 		h->heap[largest]->heapidx=largest;
 		max_heapify(h,largest);
 	}
-	assert (heap_wrong_index(h)==0);
+	//assert (heap_wrong_index(h)==0);
 }
 
 void heap_increase_key(heap* h , int i , float key ){
 	// in practice use this only for de novo insertion
-	assert (heap_wrong_index(h)==0);
+	//assert (heap_wrong_index(h)==0);
 	if (  key < h->heap[i]->delta ){
 		fprintf(stderr,"new key smaller than current key\n");
 		exit(1);
@@ -224,57 +224,11 @@ void heap_increase_key(heap* h , int i , float key ){
 		h->heap[parent(i)]->heapidx = parent(i);	
 		i=parent(i);
 	}
-	assert (heap_wrong_index(h)==0);
-}
-
-void heap_insert (  heap* h , node* n  ){
-	//assumes a max heap to start with
-	assert (heap_wrong_index(h)==0);
-	float key = n->delta;
-	h->size++;
-	n->delta=-FLT_MAX;
-	h->heap[h->size-1] = n;
-	h->heap[h->size-1]->heapidx = h->size-1;
-	assert (heap_wrong_index(h)==0);
-	heap_increase_key( h , h->size-1 , key );
-	assert (check_heap_integrity(h)==0);
-	assert (heap_wrong_index(h)==0);
-}
-
-void heap_delete (heap* h, int i){
-	assert (check_heap_integrity(h)==0);
-	h->heap[i]=h->heap[h->size-1];
-	h->heap[i]->heapidx=i;
-	h->size--;
-	max_heapify(h,i);
-	assert (check_heap_integrity(h)==0);
-	assert (heap_wrong_index(h)==0);
-}
-
-void print_heap(heap* h){
-	if (h->size==0) {
-		fprintf(stderr,"empty heap\n");
-		return;	
-	}
-	int i;
-	for (i=0; i< h->size-1; i++){
-		fprintf(stderr,"%d:%d:%.4f ",i,h->heap[i]->heapidx,h->heap[i]->delta);
-	}
-	fprintf(stderr,"%d:%d:%.4f\n",h->size-1,h->heap[h->size-1]->heapidx,h->heap[h->size-1]->delta);
-}
-
-node* heap_extract_max (heap* h){
-	node* maxn = h->heap[0];
-	h->heap[0]=h->heap[h->size-1];
-	h->heap[0]->heapidx=0;
-	h->size--;
-	max_heapify(h,0);
-	assert (heap_wrong_index(h)==0);
-	return(maxn);
+	//assert (heap_wrong_index(h)==0);
 }
 
 int check_heap_integrity(heap* h){
-	int i,l,r,p;
+	int i,p;
 	for(i=h->size-1;i>0;i--){
 		p=parent(i);
 		if (h->heap[i]->delta>h->heap[p]->delta){
@@ -287,6 +241,56 @@ int check_heap_integrity(heap* h){
 		}
 	}
 	return 0;
+}
+
+void heap_insert (  heap* h , node* n  ){
+	//assumes a max heap to start with
+	//assert (heap_wrong_index(h)==0);
+	float key = n->delta;
+	h->size++;
+	n->delta=-FLT_MAX;
+	h->heap[h->size-1] = n;
+	h->heap[h->size-1]->heapidx = h->size-1;
+	//assert (heap_wrong_index(h)==0);
+	heap_increase_key( h , h->size-1 , key );
+	//assert (check_heap_integrity(h)==0);
+	//assert (heap_wrong_index(h)==0);
+}
+
+node* heap_extract_max (heap* h){
+	node* maxn = h->heap[0];
+	h->heap[0]=h->heap[h->size-1];
+	h->heap[0]->heapidx=0;
+	h->size--;
+	max_heapify(h,0);
+	//assert (heap_wrong_index(h)==0);
+	return(maxn);
+}
+
+void heap_delete (heap* h, int i){
+	//assert (check_heap_integrity(h)==0);
+	node* del;
+	//h->heap[i]=h->heap[h->size-1];
+	//h->heap[i]->heapidx=i;
+	/*h->heap[i]->delta=FLT_MAX;*/
+	//h->size--;
+	heap_increase_key(h,i,FLT_MAX);
+	del=heap_extract_max(h);
+	//max_heapify(h,i);
+	//assert (check_heap_integrity(h)==0);
+	//assert (heap_wrong_index(h)==0);
+}
+
+void print_heap(heap* h){
+	if (h->size==0) {
+		fprintf(stderr,"empty heap\n");
+		return;	
+	}
+	int i;
+	for (i=0; i< h->size-1; i++){
+		fprintf(stderr,"%d:%d:%.4f ",i,h->heap[i]->heapidx,h->heap[i]->delta);
+	}
+	fprintf(stderr,"%d:%d:%.4f\n",h->size-1,h->heap[h->size-1]->heapidx,h->heap[h->size-1]->delta);
 }
 
 float find_heap_max(heap* h){
@@ -321,9 +325,7 @@ int main(int argc, char* argv[]){
 	int*    c = malloc(nlines*sizeof(int));
 	int*    segment_id = malloc(nlines*sizeof(int));
 	int ilambda = 0 ;
-	float avgtheta;
 	float lambda[13] = {0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000};
-	float delta;
 	node* el, *head;
 	head=malloc(sizeof(node));
 	head->prev=NULL;
@@ -343,7 +345,7 @@ int main(int argc, char* argv[]){
 	el=head;
 	while(1){
 			if (el->next==NULL) {
-				el->delta=-1000;
+				el->delta=-FLT_MAX;
 				heap_insert(h,el);
 				break;
 			}
@@ -356,17 +358,18 @@ int main(int argc, char* argv[]){
 	le=print_list(head,0);	
 	node* maxn;
 	node* maxn2;
+	node* tmpnext;
 	int loopc=0;
 	if (DEBUG) print_heap(h);
-	int idx;
 	while(1 && le>1){
 		if (check_heap_integrity(h)) {
 			fprintf(stderr,"no heap integrity\n");
 			exit(1);
 		}
-		print_heap(h);
-		maxn = find_max(head);
+		if (DEBUG) print_heap(h);
+		//maxn = find_max(head);
 		maxn2 = heap_extract_max(h);
+		maxn=maxn2;
 		if (check_heap_integrity(h)) {
 			fprintf(stderr,"no heap integrity\n");
 			exit(1);
@@ -382,52 +385,85 @@ int main(int argc, char* argv[]){
 			maxn=maxn2;
 		}
 		if (maxn->prev==NULL && maxn->next==NULL) break;
+		
 		if ( (maxn->delta + lambda[ilambda]) >0 ){
 			/***** merge ****/
 			fprintf( stderr , "merging %d\n", maxn->segment_id );
-			mergec++;
-			node* el2=maxn->next;
-			for( i= el2->from ; i <= el2->to ; i++ ){
-				segment_id[i] = maxn->segment_id;
-			}
 			if (DEBUG) {
 				fprintf(stderr,"maxn before merging\n");
 				print_node( maxn , pos );
 			}
-			maxn->next = el2->next;
-			if ( el2->next != NULL ){
-				el2->next->prev = maxn ;
+			mergec++;
+			tmpnext=maxn->next;
+			assert(tmpnext!=NULL);
+			for( i= tmpnext->from ; i <= tmpnext->to ; i++ ){
+					segment_id[i] = maxn->segment_id;
+			}	
+			/** 3 cases : (1)max==head **/
+			if (maxn->prev==NULL && tmpnext!=NULL && tmpnext->next!=NULL ){
+				assert(maxn==head);
+				if (DEBUG) fprintf(stderr,"merging 1\n");
+				heap_delete(h,tmpnext->heapidx);
+				maxn->to = tmpnext->to;
+				update_lik(maxn, theta,  nc,  c);
+				maxn->next=tmpnext->next;
+				delta_lik(maxn,pos,theta,  nc,  c);
+				maxn->next->prev=maxn;
+				heap_insert(h,maxn);
+				free(tmpnext);
+				tmpnext=NULL;
+				goto finish;
+			} 
+			/**  (2)max==node in the middle of long list **/
+			if (maxn->prev!=NULL && tmpnext!=NULL && tmpnext->next!=NULL){
+				if (DEBUG) fprintf(stderr,"merging 2\n");
+				heap_delete( h , tmpnext->heapidx );
+				heap_delete( h , maxn->prev->heapidx );
+				maxn->to = tmpnext->to;
+				update_lik( maxn, theta,  nc,  c );
+				update_lik( maxn->prev, theta,  nc,  c );
+				maxn->next = tmpnext->next;
+				maxn->next->prev = maxn;
+				delta_lik( maxn,pos,theta,  nc,  c );
+				delta_lik( maxn->prev,pos,theta,  nc,  c );	
+				heap_insert( h, maxn );
+				heap_insert( h , maxn->prev );
+				free( tmpnext );
+				tmpnext = NULL;
+				goto finish;	
 			}
-			maxn->to = el2->to;
-			idx = el2->heapidx;
-			heap_delete( h , idx );
-			assert (check_heap_integrity(h)==0);
-			assert (heap_wrong_index(h)==0);
-			free( el2 );
-			update_lik( maxn , theta , nc , c );
-			if ( maxn->prev != NULL ){
-				delta_lik( maxn->prev , pos , theta , nc , c );
-				idx = maxn->prev->heapidx;
-				heap_delete(h,idx);
-				heap_insert(h,maxn->prev);
-				assert (check_heap_integrity(h)==0);
+			/** (3)max==last but one node, merging with the last **/
+			if (tmpnext->next==NULL){
+				if (DEBUG) fprintf(stderr,"merging 3\n");
+				heap_delete( h , tmpnext->heapidx );
+				if (maxn->prev!=NULL) heap_delete( h , maxn->prev->heapidx );
+				maxn->to = tmpnext->to;
+				update_lik( maxn, theta,  nc,  c );
+				if (maxn->prev!=NULL) update_lik( maxn->prev, theta,  nc,  c );
+				maxn->next=NULL;
+				//maxn->next->prev = maxn;
+				//delta_lik( maxn,pos,theta,  nc,  c );
+				maxn->delta=-FLT_MAX;
+				if (maxn->prev!=NULL) delta_lik( maxn->prev,pos,theta,  nc,  c );	
+				heap_insert( h, maxn );
+				if (maxn->prev!=NULL) heap_insert( h , maxn->prev );
+				free( tmpnext );
+				tmpnext = NULL;
+			}
+			finish:
 				assert (heap_wrong_index(h)==0);
-			}
-			delta_lik( maxn , pos , theta , nc , c );
-			assert (heap_wrong_index(h)==0);
-			if (DEBUG) {
-				fprintf( stderr , "maxn after merging\n" );
-				print_node( maxn ,pos );
-				print_heap(h);
-			}
-			if (DEBUG) print_segmentation(head,lambda[ilambda],pos,nc,c,theta);
-			heap_insert( h , maxn );
-			assert ( heap_wrong_index(h)==0 );
+				if (DEBUG) {
+					fprintf( stderr , "maxn after merging\n" );
+					print_node( maxn ,pos );
+					//print_heap(h);
+				}
+				if (DEBUG) print_segmentation(stderr,head,lambda[ilambda],pos,nc,c,theta);
+				assert ( heap_wrong_index(h)==0 );
 		} else {
 			assert ( heap_wrong_index(h)==0 );
 			heap_insert( h , maxn );
 			assert ( heap_wrong_index(h)==0 );
-			le = print_segmentation( head , lambda[ilambda] , pos , nc , c , theta );
+			le = print_segmentation(stdout, head , lambda[ilambda] , pos , nc , c , theta );
 			fprintf( stderr , "%d segment(s)\n" , le );
 			if (ilambda<12)
 				ilambda++;
