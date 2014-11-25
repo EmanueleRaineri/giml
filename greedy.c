@@ -3,10 +3,10 @@
 #include <float.h>
 #include <math.h>
 #include <errno.h>
-//#define NDEBUG 1
+#define NDEBUG 1
 #include <assert.h>
 
-#define DEBUG 1
+#define DEBUG 0
 typedef struct node{
 	// from, to refer to indexes for the four arrays mentioned above, 
 	// not to real positions along 
@@ -118,6 +118,14 @@ void list_of_file(char* fname,node* head, int nlines,
 	}
 	el->prev->next=NULL;
 	fclose(in);
+}
+
+void free_list(node* head){
+	node* el;
+	for(el=head->next;el!=NULL;el=el->next){
+		free(el->prev);
+	}
+	free(el);
 }
 
 void print_node(node* el, int* pos){
@@ -305,6 +313,11 @@ float find_heap_max(heap* h){
 }
 
 int main(int argc, char* argv[]){
+	#if defined(NDEBUG)
+	fprintf(stderr,"NDEBUG is defined. Assert disabled.\n");
+	#else
+	fprintf(stderr,"NDEBUG is not defined. Assert enabled.\n");
+	#endif
 	int i,mergec=0;
 	int nlines=0,le;
 	/*count lines*/
@@ -362,18 +375,10 @@ int main(int argc, char* argv[]){
 	int loopc=0;
 	if (DEBUG) print_heap(h);
 	while(1 && le>1){
-		if (check_heap_integrity(h)) {
-			fprintf(stderr,"no heap integrity\n");
-			exit(1);
-		}
 		if (DEBUG) print_heap(h);
 		//maxn = find_max(head);
 		maxn2 = heap_extract_max(h);
 		maxn=maxn2;
-		if (check_heap_integrity(h)) {
-			fprintf(stderr,"no heap integrity\n");
-			exit(1);
-		}
 		assert (heap_wrong_index(h)==0);
 		if ( fabs(maxn->delta-maxn2->delta) > 1e-15 ){
 			fprintf(stderr,"oops(value):%.4f\t%.4f\n",maxn->delta,maxn2->delta);
@@ -472,5 +477,6 @@ int main(int argc, char* argv[]){
 		loopc++;
 	}
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
+	free_list(head);
 	return(0);
 }
