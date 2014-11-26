@@ -1,26 +1,138 @@
 ---
-title: "gimli"
+title: "uniformly methylated regions & DMRs"
 author: Emanuele Raineri 
 date: November 17th, 2014
 output: beamer_presentation
 ---
 
-#methyldiff: a short summary
 
-a short intro to the innards of methyldiff
+Methylation data come in the following form:
 
--Methylation level: $\theta$
-
--You never know it with infinite precision (due to finite coverage)
+```
+chr1 10471 15 6
+chr1 10484 21 3
+```
 
 -Nonconverted reads : $\overline{n}$. Converted reads: $n$.
 
+
+-there is one such pair for every CpG in a genome.
+
+--------------------------------------------
+
+```{r echo=F}
+g199<-read.table("G199.sample",stringsAsFactors=F)
+names(g199)<-c("chrom","pos","nc","conv")
+plot(g199$pos,g199$nc/(g199$nc+g199$conv))
+```
+
+-----------------------------------------
+
+-I'd like to segment the data
+
+-i.e. find regions of the genome in which the methylation is roughly uniform
+and changes at the ends of the region
+
+
+
+--------------------------
+
+there are two parameters to consider in such setting:
+
+-how well do my segment approximate the original data and
+
+-how many segments do I have.
+
+--------------------
+
+-the "how many segments" part is relates to the length of the segments, hence to the characteristic
+scale of the segmentation; 
+
+-what I am looking for is a multiscale segmentation in which I can trade
+goodness-of-fit for complexity of the model.
+
+-----------------
+
+-I will show you an algorithm which does just that; part of the algorithm comes from the VEGA paper
+altough I found several mistakes in their implementation.
+
+(VEGA: variational segmentation for copy number detection
+Bioinformatics 2010 26 (24) 3020-3027)
+
 ---
 
-If you knew $\theta$, you could compute the probability
-of observing $\overline{n}$ non converted reads.
+-for a given segment I define the goodness of fit through the log likelihood 
+$\mathcal{L}$.
 
-#Gimli: greedy methylation levels
+$\mathcal{L}=P(\mbox{data}|\theta)$.
+
+-If the segment contains one point only:
+
+$\mathcal{L}={\overline{n}+n \choose \overline{n}} \theta^{\overline{n}} (1-\theta)^n$
+
+where $\hat{\theta}=\frac{\overline{n}}{\overline{n}+n}$
+
+----------------------
+
+-if the segments contains more than one point first
+(let's say it contains $K$ points) I estimate 
+
+$\hat{\theta}=\frac{1}{K}\sum_{i=1}^K\frac{\overline{n_i}}{\overline{n_i}+n_i}$
+
+-(this is not the correct estimation, but I guess the error is small. Will correct it).
+
+-------------------
+
+-the algorithms builds a list containing all the segments.
+at the beginning, each methylated positions is a segment, containing one point only.
+
+-one proceeds along the list of segments, computing how much it would cost to
+join two consecutive ones.
+
+---------------
+
+-when I merge two segments I incur in a loss of likelihood and a gain in simplicity.
+
+Loss of likelihood:
+
+
+\[\mathcal{L}_{12}^\prime=\mathcal{L}-\mathcal{L}_1-\mathcal{L}_2+\mathcal{L}_{12}\]
+
+where $\mathcal{L}_{12}\leq \mathcal{L}_1+\mathcal{L}_2$.
+
+
+--------------------
+
+-on the other hand, one has to account for the fact that 
+now the model is less complex, which can be a good thing.
+
+-So one adds to the previous sum a term $\lambda$ which gives
+a prize to less complex models so that the new likelihood becomes
+
+\[\mathcal{L}_{12}^\prime=\mathcal{L}-\mathcal{L}_1-\mathcal{L}_2+\mathcal{L}_{12}+\lambda\]
+
+-------------------------------------------
+
+-I go on , computing $\mathcal{L}_{xy}^\prime$ for all the pairs $x,y$ of consecutive segments.
+then find out which is the gratess of all these. Is is positive? If so, join the segments and start
+again.
+
+---------------
+
+what happens if I can't find a positive $\mathcal{L}$?
+
+I can either decide to:
+
+-stop here, or
+
+-increase $\lambda$.
+
+```
+float lambda[13] = 
+{0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000};
+```
+
+------------
 
 A numerical example
 
@@ -55,58 +167,61 @@ df<-within(df,loglik<-dbinom(nc,nc+c,theta,log=T))
 df
 ```
 
-
-
----------------
-
-the algorithms builds a list containing all the segments.
-at the beginning, each methylated positions is a segment, containing one point only.
-
----------------
-
-one proceeds along the list of segments, computing how much it would cost to
-join two consecutive ones.
-
----------------
-
-wheneve I join $2$ segments, the total likelihood of the model diminishes
-
-For example if one joins points $1$ and $2$, one has
-\[\matcal{L}_{12}^\prime=\mathcal{L}-\mathcal{L}_1-\mathcal{L}_2+\mathcal{L}_{12}\]
-
-where $\mathcal{L}_{12}\leq \mathcal{L}_1+\mathcal{L}_2$.
-
 ----------------------
-on the other hand, one has to account for the fact that 
-now the model is less complex, which can be a good thing.
 
-So one adds to the previous sum a term $\lambda$ which gives
-a prize to less complex models so that the new likelihood becomes
+the $\delta$s are:
 
-\[\matcal{L}_{12}^\prime=\mathcal{L}-\mathcal{L}_1-\mathcal{L}_2+\mathcal{L}_{12}+\lambda\]
+```{r echo=F}
+df<-within(df,delta<-c(-8.64,-2.82,-4.47,-11.51,-1000))
+```
+
+```{r}
+df
+```
+--------------------------
+
+![alt text](fig1.png)
 
 --------------------
-One goes on , computing $\matcal{L}_{xy}^\prime$ for all the pairs $x,y$ of consecutive segments.
-then find out which is the gratess of all these. Is is positive? If so, join the segments and start
-again.
 
----------------
+```{r echo=F}
+#load some real data
+source("segmentlib.R")
+options(digits=4)
 
-what happens if I can't find a positive L?
+#g199<-read.table("pluto.txt",stringsAsFactors=F,sep=" ")
+#g199<-read.table("example.in",stringsAsFactors=F,sep=" ")
+g199<-read.table("G199.sample",stringsAsFactors=F,sep=" ")
+#g199<-read.table("ziopaperone.txt",stringsAsFactors=F,sep=" ")
+seg.list<-slib$seg.list.of.data.frame.lik(g199)
+#slib$print.seg.list.lik(seg.list,0)
+lambda.list<-c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000)
+
+segs<-slib$loop.over.lambda.lik(seg.list,lambda.list)
+slib$plot.segmentation(g199,segs,1000,760000, 766600)
+#print(segs)
+lelist<-list()
+liklist<-list()
+i<-1
+for (l in lambda.list){
+	m1<-median(segs[segs$lambda==l,2]-segs[segs$lambda==l,1])
+	m2<-mean(segs[segs$lambda==l,2]-segs[segs$lambda==l,1])
+	#cat("lambda:",l," median:",m1," mean:",m2,"\n")
+	lelist[[i]]<-segs[segs$lambda==l,2]-segs[segs$lambda==l,1]+1
+	liklist[[i]]<-segs[segs$lambda==l,"loglik"]
+	i<-i+1
+}
+```
 
 
-------------------
+------------
 
-peek at  the max from the heap, and if there's no merging
-put it back again (heap is unmodified).
+```{r}
+boxplot(lelist,range=0,names=lambda.list,log="y")
+```
 
----------------------------
-if there's merging, it can be of $3$ types:
+------------
 
-either this
-
-or this
-
-or this
-
-
+```{r}
+boxplot(liklist,range=0,names=lambda.list)
+```

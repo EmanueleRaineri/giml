@@ -1,5 +1,5 @@
 library(stats4)
-library(lineprof)
+#library(lineprof)
 
 slib = new.env()
 
@@ -289,7 +289,7 @@ slib$loop.over.lambda.lik<-function(seg.list,all.lambda){
 			#segmentation[idx,7]<- li$loglik
 			#segmentation[idx,8]<- lambda
 		}
-		cat("seg.list:",length(seg.list)," counter:",counter,"\n")
+		#cat("seg.list:",length(seg.list)," counter:",counter,"\n")
 	}
 	segmentation<-data.frame(col1,col2,col3,col4,col5,col6,col7,col8)	
 	names(segmentation)<-c("from","to","npoints","mintheta","theta","maxtheta", "loglik","lambda")

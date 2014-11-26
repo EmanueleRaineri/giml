@@ -20,7 +20,7 @@ i<-1
 for (l in lambda.list){
 	m1<-median(segs[segs$lambda==l,2]-segs[segs$lambda==l,1])
 	m2<-mean(segs[segs$lambda==l,2]-segs[segs$lambda==l,1])
-	cat("lambda:",l," median:",m1," mean:",m2,"\n")
+	#cat("lambda:",l," median:",m1," mean:",m2,"\n")
 	lelist[[i]]<-segs[segs$lambda==l,2]-segs[segs$lambda==l,1]
 	liklist[[i]]<-segs[segs$lambda==l,"loglik"]
 	i<-i+1
