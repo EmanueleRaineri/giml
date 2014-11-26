@@ -21,9 +21,9 @@ chr1 10484 21 3
 --------------------------------------------
 
 ```{r echo=F}
-g199<-read.table("G199.sample",stringsAsFactors=F)
+g199<-read.table("G199_cpg.segmeth.chr10.in.pmd",stringsAsFactors=F)
 names(g199)<-c("chrom","pos","nc","conv")
-plot(g199$pos,g199$nc/(g199$nc+g199$conv))
+plot(g199$pos,g199$nc/(g199$nc+g199$conv),xlim=c(1.14e8,1.17e8))
 ```
 
 -----------------------------------------
@@ -60,6 +60,10 @@ altough I found several mistakes in their implementation.
 Bioinformatics 2010 26 (24) 3020-3027)
 
 ---
+
+![alt text](fig1.png)
+
+--------------------
 
 -for a given segment I define the goodness of fit through the log likelihood 
 $\mathcal{L}$.
@@ -180,9 +184,6 @@ df
 ```
 --------------------------
 
-![alt text](fig1.png)
-
---------------------
 
 ```{r echo=F}
 #load some real data

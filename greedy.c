@@ -138,10 +138,11 @@ void print_node(node* el, int* pos){
 		fprintf(stderr,"-------------\n");
 }
 
-int print_segmentation(FILE* stream, node* head, float lambda, int* pos, int*nc, int* c, float* theta){
+int print_segmentation(FILE* stream, node* head, float lambda, int* pos, int*nc, int* c, float* theta, float* totloglik ){
 	node *el;
 	int i,n,le=0;
 	float mintheta,maxtheta,avgtheta,t;
+	*totloglik=0;
 	for( el=head; el!=NULL; el=el->next ){
 		n = el->to-el->from+1;
 		avgtheta=el->sumtheta/n;mintheta=FLT_MAX;maxtheta=-FLT_MAX;
@@ -150,6 +151,7 @@ int print_segmentation(FILE* stream, node* head, float lambda, int* pos, int*nc,
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
 		}
+		*totloglik+=el->loglik;
 		fprintf(stream,"%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
 		pos[el->from],pos[el->to],n,mintheta,avgtheta,maxtheta,el->loglik,el->delta,lambda);
 		le++;
@@ -373,8 +375,10 @@ int main(int argc, char* argv[]){
 	node* maxn2;
 	node* tmpnext;
 	int loopc=0;
+	float totloglik;
 	if (DEBUG) print_heap(h);
 	while(1 && le>1){
+		//fprintf(stderr,"lambda=%.4f\n",lambda[ilambda]);
 		if (DEBUG) print_heap(h);
 		//maxn = find_max(head);
 		maxn2 = heap_extract_max(h);
@@ -456,20 +460,20 @@ int main(int argc, char* argv[]){
 				tmpnext = NULL;
 			}
 			finish:
-				assert (heap_wrong_index(h)==0);
+				assert ( heap_wrong_index(h)==0 );
 				if (DEBUG) {
 					fprintf( stderr , "maxn after merging\n" );
 					print_node( maxn ,pos );
 					//print_heap(h);
 				}
-				if (DEBUG) print_segmentation(stderr,head,lambda[ilambda],pos,nc,c,theta);
+				if (DEBUG) print_segmentation(stderr,head,lambda[ilambda],pos,nc,c,theta,&totloglik);
 				assert ( heap_wrong_index(h)==0 );
-		} else {
+		} else { // no possible mergings
 			assert ( heap_wrong_index(h)==0 );
 			heap_insert( h , maxn );
 			assert ( heap_wrong_index(h)==0 );
-			le = print_segmentation(stdout, head , lambda[ilambda] , pos , nc , c , theta );
-			fprintf( stderr , "%d segment(s)\n" , le );
+			le = print_segmentation(stdout, head , lambda[ilambda] , pos , nc , c , theta, &totloglik );
+			fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
 			if (ilambda<12)
 				ilambda++;
 			else break;
