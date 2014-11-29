@@ -17,6 +17,9 @@ typedef struct node{
 	float loglik;
 	float delta;
 	float sumtheta;
+	float mletheta;
+	int sum_nc;
+	int sum_c;
 	int segment_id;
 	int heapidx;
 	struct node* prev;
@@ -67,21 +70,33 @@ int print_list(FILE* stream, node* head, float lambda){
 
 void update_lik(node* el, float* theta, int* nc, int* c){
 	float sumtheta=0,avgtheta;
+	int sum_nc=0;
+	int sum_c=0;
 	int i;
 	for( i = el->from; i <= el->to; i++ ){
+		sum_nc+=nc[i];
+		sum_c+=c[i];
 		sumtheta+=theta[i];		
 	}
 	el->sumtheta = sumtheta;
 	avgtheta = sumtheta/(el->to - el->from +1);
+	el->sum_nc=sum_nc;
+	el->sum_c=sum_c;
+	el->mletheta=(float)sum_nc/(sum_nc+sum_c);
+	if (el->mletheta==0 && el->sum_nc>0) {
+		fprintf(stderr,"update_lik:invalid mle %.4f\n",el->mletheta);
+		exit(1);
+	}
 	el->loglik=0;
 	for( i = el->from; i <= el->to; i++ ){
-		el->loglik+=dbinom(nc[i],nc[i]+c[i],avgtheta);
+		//el->loglik+=dbinom(nc[i],nc[i]+c[i],avgtheta);
+		el->loglik+=dbinom( nc[i] , nc[i]+c[i] , el->mletheta );
 	}
 }
 
 void delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
-	int i;
-	float sumtheta=0,avgtheta;
+	int i,sum_nc,sum_c;
+	float sumtheta=0,avgtheta,mletheta;
 	if (el->next==NULL) {
 		fprintf(stderr,"el->next==NULL in delta_lik (el->delta=%.4f)\n",el->delta);
 		el->delta=-FLT_MAX;
@@ -89,9 +104,17 @@ void delta_lik( node* el, int* pos, float* theta, int* nc, int* c ){
 	}
 	sumtheta=(el->sumtheta)+(el->next->sumtheta);
 	avgtheta=sumtheta/(el->next->to - el->from +1);
+	sum_nc=el->sum_nc+el->next->sum_nc;
+	sum_c = el->sum_c+el->next->sum_c;
+	mletheta=(float)sum_nc/(sum_c+sum_nc);
+	if (mletheta==0 && sum_nc>0) {
+		fprintf(stderr,"delta_lik:invalid mle %.4f\n",mletheta);
+		exit(1);
+	}
 	el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
-		el->delta+=dbinom(nc[i],nc[i]+c[i],avgtheta);
+		//el->delta+=dbinom(nc[i],nc[i]+c[i],avgtheta);
+		el->delta+=dbinom(nc[i],nc[i]+c[i],mletheta);
 	}
 	el->delta=el->delta - el->loglik - el->next->loglik;
 }
@@ -142,11 +165,12 @@ void print_node(node* el, int* pos){
 int print_segmentation(FILE* stream, node* head, float lambda, int* pos, int*nc, int* c, float* theta, float* totloglik ){
 	node *el;
 	int i,n,le=0;
-	float mintheta,maxtheta,avgtheta,t;
+	float mintheta,maxtheta,t;
 	*totloglik=0;
 	for( el=head; el!=NULL; el=el->next ){
 		n = el->to-el->from+1;
-		avgtheta=el->sumtheta/n;mintheta=FLT_MAX;maxtheta=-FLT_MAX;
+		//avgtheta=el->sumtheta/n;
+		mintheta=FLT_MAX;maxtheta=-FLT_MAX;
 		for ( i=el->from; i<=el->to; i++ ){
 			t=theta[i];
 			if (t>maxtheta) maxtheta=t;
@@ -154,7 +178,7 @@ int print_segmentation(FILE* stream, node* head, float lambda, int* pos, int*nc,
 		}
 		*totloglik+=el->loglik;
 		fprintf(stream,"%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
-		pos[el->from],pos[el->to],n,mintheta,avgtheta,maxtheta,el->loglik,el->delta,lambda);
+		pos[el->from],pos[el->to],n,mintheta,el->mletheta,maxtheta,el->loglik,el->delta,lambda);
 		le++;
 	}
 	return(le);
