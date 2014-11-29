@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #define DEBUG 0
+
 typedef struct node{
 	// from, to refer to indexes for the four arrays mentioned above, 
 	// not to real positions along 
@@ -48,16 +49,16 @@ float dbinom(int x, int size, float p){
 	return ( bcoeff + x*log(p) + (size-x)*log(1-p) );
 }
 
-int print_list(node* head, float lambda){
+int print_list(FILE* stream, node* head, float lambda){
 	int le = 0;	
 	node* el = head;
 	while(el!=NULL){
-		printf("%d\t",el->segment_id);
-		printf("%d\t",el->from);
-		printf("%d\t",el->to);
-		printf("%.4f\t",el->loglik);
-		printf("%.4f\t",el->delta);
-		printf("%.4f\n",lambda);
+		fprintf(stream,"%d\t",el->segment_id);
+		fprintf(stream, "%d\t",el->from);
+		fprintf(stream,"%d\t",el->to);
+		fprintf(stream,"%.4f\t",el->loglik);
+		fprintf(stream,"%.4f\t",el->delta);
+		fprintf(stream,"%.4f\n",lambda);
 		le++;
 		el = el->next;
 	}
@@ -370,7 +371,7 @@ int main(int argc, char* argv[]){
 			el = el->next;
 	}
 	/* */
-	le=print_list(head,0);	
+	le=print_list(stderr,head,0);	
 	node* maxn;
 	node* maxn2;
 	node* tmpnext;
@@ -378,9 +379,7 @@ int main(int argc, char* argv[]){
 	float totloglik;
 	if (DEBUG) print_heap(h);
 	while(1 && le>1){
-		//fprintf(stderr,"lambda=%.4f\n",lambda[ilambda]);
 		if (DEBUG) print_heap(h);
-		//maxn = find_max(head);
 		maxn2 = heap_extract_max(h);
 		maxn=maxn2;
 		assert (heap_wrong_index(h)==0);
@@ -464,7 +463,6 @@ int main(int argc, char* argv[]){
 				if (DEBUG) {
 					fprintf( stderr , "maxn after merging\n" );
 					print_node( maxn ,pos );
-					//print_heap(h);
 				}
 				if (DEBUG) print_segmentation(stderr,head,lambda[ilambda],pos,nc,c,theta,&totloglik);
 				assert ( heap_wrong_index(h)==0 );
@@ -480,6 +478,8 @@ int main(int argc, char* argv[]){
 		}	
 		loopc++;
 	}
+	//le = print_segmentation(stdout, head , lambda[ilambda] , pos , nc , c , theta, &totloglik );
+	//fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
 	free_list(head);
 	return(0);
