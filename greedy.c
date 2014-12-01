@@ -3,10 +3,10 @@
 #include <float.h>
 #include <math.h>
 #include <errno.h>
-#define NDEBUG 1
 #include <assert.h>
 
 #define DEBUG 0
+#define NDEBUG 1
 
 typedef struct node{
 	// from, to refer to indexes for the four arrays mentioned above, 
