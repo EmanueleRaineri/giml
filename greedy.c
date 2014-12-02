@@ -9,7 +9,9 @@
 #define DEBUG 0
 
 typedef struct table{
+	char* chrom;
 	float*  theta;
+	float*  loglik;
 	int*    pos;
 	int*    nc;
 	int*    c;
@@ -124,7 +126,7 @@ void delta_lik( node* el, table* data ){
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],mletheta);
 	}
-	el->delta=el->delta - el->loglik - el->next->loglik;
+	el->delta = el->delta - el->loglik - el->next->loglik;
 }
 
 int list_of_file(char* fname,node* head, int nlines, table* data ){
@@ -135,16 +137,21 @@ int list_of_file(char* fname,node* head, int nlines, table* data ){
 	int i;
 	for( i=0; i<nlines; i++ ) {
 		buffer =	fgets(buffer,sizeline,in);
-		sscanf(buffer,"%*s %d %d %d",data->pos+i,data->nc+i,data->c+i);
+		sscanf(buffer,"%s %d %d %d",data->chrom,data->pos+i,data->nc+i,data->c+i);
 		data->segment_id[i]=i;
 		data->theta[i]=(float)data->nc[i]/(data->nc[i]+data->c[i]);
-		el -> from = i;
-		el -> to = i;
-		el -> loglik = 0 ;
-		el -> delta = 0 ;
-		el -> segment_id = i;
-		el -> next = malloc(sizeof(node));
-		el -> next->prev = el;
+		data->loglik[i]=dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
+		el-> from = i;
+		el-> to = i;
+		el-> loglik = data->loglik[i];
+		el-> delta = 0 ;
+		el-> segment_id = i;
+		el-> next = malloc(sizeof(node));
+		el-> next->prev = el;
+		el->sum_nc+=data->nc[i];
+		el->sum_c+=data->c[i];
+		el->sumtheta+=data->theta[i];
+		el->mletheta=(float)el->sum_nc/(el->sum_nc+el->sum_c);
 		el = el->next;
 	}
 	el->prev->next=NULL;
@@ -175,19 +182,22 @@ void print_node(node* el, int* pos){
 int print_segmentation(FILE* stream, node* head, float lambda, table* data, float* totloglik ){
 	node *el;
 	int i,n,le=0;
-	float mintheta,maxtheta,t;
+	float mintheta,maxtheta,t,adjlik;
 	*totloglik=0;
 	for( el=head; el!=NULL; el=el->next ){
 		n = el->to-el->from+1;
-		mintheta=FLT_MAX;maxtheta=-FLT_MAX;
+		mintheta=FLT_MAX;maxtheta=-FLT_MAX;adjlik=0;
 		for ( i=el->from; i<=el->to; i++ ){
 			t=data->theta[i];
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
+			adjlik+=data->loglik[i];
 		}
 		*totloglik+=el->loglik;
-		fprintf(stream,"%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
-		data->pos[el->from],data->pos[el->to],n,mintheta,el->mletheta,maxtheta,el->loglik,el->delta,lambda);
+		fprintf(stream,"%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
+		data->chrom,data->pos[el->from],data->pos[el->to],n,
+		mintheta,el->mletheta,maxtheta,
+		el->loglik-adjlik,el->delta,lambda);
 		le++;
 	}
 	return(le);
@@ -351,34 +361,34 @@ void merge1(node* maxn, node* tmpnext, heap* h, table* data){
 }
 
 void merge2(node* maxn, node* tmpnext, heap* h, table* data){
-				heap_delete( h , tmpnext->heapidx );
-				heap_delete( h , maxn->prev->heapidx );
-				maxn->to = tmpnext->to;
-				update_lik( maxn, data );
-				update_lik( maxn->prev, data );
-				maxn->next = tmpnext->next;
-				maxn->next->prev = maxn;
-				delta_lik( maxn,data );
-				delta_lik( maxn->prev,data );	
-				heap_insert( h, maxn );
-				heap_insert( h , maxn->prev );
-				free( tmpnext );
-				tmpnext = NULL;
+	heap_delete( h , tmpnext->heapidx );
+	heap_delete( h , maxn->prev->heapidx );
+	maxn->to = tmpnext->to;
+	update_lik( maxn, data );
+	update_lik( maxn->prev, data );
+	maxn->next = tmpnext->next;
+	maxn->next->prev = maxn;
+	delta_lik( maxn,data );
+	delta_lik( maxn->prev,data );	
+	heap_insert( h, maxn );
+	heap_insert( h , maxn->prev );
+	free( tmpnext );
+	tmpnext = NULL;
 }
 
 void merge3(node* maxn, node* tmpnext, heap* h, table* data){
-				heap_delete( h , tmpnext->heapidx );
-				if (maxn->prev != NULL) heap_delete( h , maxn->prev->heapidx );
-				maxn->to = tmpnext->to;
-				update_lik( maxn, data );
-				if (maxn->prev != NULL) update_lik( maxn->prev, data );
-				maxn->next=NULL;
-				maxn->delta=-FLT_MAX;
-				if (maxn->prev != NULL) delta_lik( maxn->prev, data );	
-				heap_insert( h, maxn );
-				if (maxn->prev != NULL) heap_insert( h , maxn->prev );
-				free( tmpnext );
-				tmpnext = NULL;
+	heap_delete( h , tmpnext->heapidx );
+	if (maxn->prev != NULL) heap_delete( h , maxn->prev->heapidx );
+	maxn->to = tmpnext->to;
+	update_lik( maxn, data );
+	if (maxn->prev != NULL) update_lik( maxn->prev, data );
+	maxn->next=NULL;
+	maxn->delta=-FLT_MAX;
+	if (maxn->prev != NULL) delta_lik( maxn->prev, data );	
+	heap_insert( h, maxn );
+	if (maxn->prev != NULL) heap_insert( h , maxn->prev );
+	free( tmpnext );
+	tmpnext = NULL;
 }
 
 int main(int argc, char* argv[]){
@@ -402,7 +412,10 @@ int main(int argc, char* argv[]){
 	fclose(in);
 	table* data;
 	data=malloc(sizeof(table));
+
+	data->chrom = malloc(1000);
 	data->theta = malloc(nlines*sizeof(float));
+	data->loglik = malloc(nlines*sizeof(float));
 	data->pos = malloc(nlines*sizeof(int));
 	data->nc = malloc(nlines*sizeof(int));
 	data->c = malloc(nlines*sizeof(int));
@@ -418,14 +431,14 @@ int main(int argc, char* argv[]){
 	h->size = 0;
 	el = head;
 	list_of_file( argv[1] , head , nlines , data );
-	// initialize  lik
-	fprintf(stderr,"initialize lik...");
-	el=head;
-	while(el!=NULL){
-			update_lik(el,data);
-			el = el->next;
-	}
-	fprintf(stderr,"done\n");
+	//initialize  lik
+	//fprintf(stderr,"initialize lik...");
+	//el=head;
+	//while(el!=NULL){
+	//	update_lik(el,data);
+	//	el = el->next;
+	//}
+	//fprintf(stderr,"done\n");
 	//initialize delta
 	fprintf(stderr,"initialize delta...");
 	el=head;

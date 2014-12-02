@@ -9,6 +9,9 @@ gimli_profile : greedy.c
 	gcc -Wall  -o $@ greedy.c -lm -g -pg
 
 
+gimli_static: greedy.c
+	gcc -Wall  -o $@ greedy.c -lm -static	
+
 out.gimli.2: gimli 
 	./gimli G199.sample > out.gimli
 	awk '$$NF==2' out.gimli > out.gimli.2
