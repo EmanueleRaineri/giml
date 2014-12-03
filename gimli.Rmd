@@ -38,11 +38,11 @@ At the moment you need to create a separate file to compute the segmentation, eg
 
 ```
 zcat /scratch/devel/heath/Blueprint/Blueprint_8/G199_cpg.txt.gz  | awk '{if ($1=="chr10" && $2<=1.22e8 && $2>=1.12e8) print $1,$2,$6,$7}' > test
-gimli test 
+gimli test > test.out 2>/dev/null 
 ```
 
 I am experimenting with a region on chr10 which goes from 1.12e8 to 1.22e8; this corresponds to $83821$ positions 
-and is processed in less than $5s$.
+and is processed in less than $2s$.
 
 #output file format
 
@@ -76,6 +76,4 @@ source("stats_segmentation.R")
 	+extend the same approach to DMRs
 
 	+allow for multiple chromosomes
-
-	+read from stdin
 
