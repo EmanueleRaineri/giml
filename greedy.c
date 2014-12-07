@@ -3,6 +3,7 @@
 #include <float.h>
 #include <math.h>
 #include <errno.h>
+#include <string.h>
 #define NDEBUG 1
 #include <assert.h>
 
@@ -84,13 +85,14 @@ void update_sdev(node* el, table* data){
 	float sumtheta=0,sumtheta2=0;
 	int i,n;
 	float* theta = data->theta;
-	n = el->to-el->from+1
+	n = el->to-el->from+1;
 	for( i = el->from; i <= el->to; i++ ){
 		sumtheta+=theta[i];		
 		sumtheta2+=theta[i]*theta[i];
 	}
 	el->sumtheta = sumtheta;
-	el->loglik =  ;
+	// loglik contain the standard deviation
+	el->loglik =  (1.0/n)*sumtheta2-sumtheta*sumtheta ;
 }
 
 void update_lik(node* el, table* data){
@@ -144,29 +146,46 @@ void delta_lik( node* el, table* data ){
 	el->delta = el->delta - el->loglik - el->next->loglik;
 }
 
-int list_of_file(node* head, table* data ){
+void delta_sdev(node* el, table* data){
+}
+
+int list_of_file(char* tmp , node* head, table* data ,int* status){
 	//FILE* in=fopen(fname,"r");
 	FILE* in = stdin;
 	//if (NULL==in){
 	//	fprintf(stderr,"can't open file %s\n",fname);
 	//	exit(1);
 	//}
+	//
+	char* refchr = malloc(LINE*sizeof(char));
+	sscanf(tmp,"%s %*d %*d %*d",refchr);
+	//
 	char* buffer=malloc(LINE*sizeof(char));
 	node* el = head;
 	int i=0;
-	//for( i=0; i<nlines; i++ ) {
 	while(1){
-		if (i>=MAXLINES){
+		if ( i >= MAXLINES){
 			fprintf(stderr,"too many lines\n");
 			exit(1);
 		}
+		// here read from tmp
+		/*   move this block to bottom     */
 		buffer =	fgets(buffer,LINE,in);
-		if (feof(in)) break;
+		if (feof(in)) {
+			*status=2;
+			break;
+		}
 		if (NULL == buffer){
 			fprintf(stderr,"problem in reading input\n");
 			exit(1);
 		}
+		/*   ***********************     */
+		//sscanf(tmp,"%s %d %d %d",data->chrom,data->pos+i,data->nc+i,data->c+i);
 		sscanf(buffer,"%s %d %d %d",data->chrom,data->pos+i,data->nc+i,data->c+i);
+		if( strcmp(data->chrom,refchr) !=0 ) {
+			*status=1;
+			break;
+		}
 		data->segment_id[i]=i;
 		data->theta[i]=(float)data->nc[i]/(data->nc[i]+data->c[i]);
 		data->loglik[i]=dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
@@ -177,12 +196,24 @@ int list_of_file(node* head, table* data ){
 		el->segment_id = i;
 		el->next = malloc(sizeof(node));
 		el->next->prev = el;
-		el->sum_nc+=data->nc[i];
-		el->sum_c+=data->c[i];
+		el->sum_nc += data->nc[i];
+		el->sum_c  += data->c[i];
 		el->sumtheta+=data->theta[i];
 		el->mletheta=(float)el->sum_nc/(el->sum_nc+el->sum_c);
 		el = el->next;
 		i++;
+	/*** 
+	move fgets here
+	**/
+		//tmp =	fgets(tmp,LINE,in);
+		//if (feof(in)) {
+		//	*status=2;
+		//	break;
+		//}
+		//if (NULL == tmp){
+		//	fprintf(stderr,"problem in reading input\n");
+		//	exit(1);
+		//}
 	}
 	if (el->prev!=NULL) el->prev->next=NULL;
 	free(el);
@@ -246,7 +277,6 @@ node* find_max(node* head){
 }
 
 unsigned int parent(unsigned int i){
-	//return ((i-1)/2);
 	return ((i-1)>>1);
 }
 
@@ -429,6 +459,7 @@ int main(int argc, char* argv[]){
 	#endif
 	int i,mergec=0;
 	int nlines,le;
+	char* buffer;
 	/*count lines*/
 	//FILE* in = fopen(argv[1],"r");
 	//char* buffer=malloc(sizeline*sizeof(char));
@@ -441,22 +472,22 @@ int main(int argc, char* argv[]){
 	table* data;
 	data=malloc(sizeof(table));
 
-	data->chrom = malloc(LINE);
-	data->theta = malloc(MAXLINES*sizeof(float));
-	data->loglik = malloc(MAXLINES*sizeof(float));
-	data->pos = malloc(MAXLINES*sizeof(int));
-	data->nc = malloc(MAXLINES*sizeof(int));
-	data->c = malloc(MAXLINES*sizeof(int));
+	data->chrom      = malloc(LINE);
+	data->theta      = malloc(MAXLINES*sizeof(float));
+	data->loglik     = malloc(MAXLINES*sizeof(float));
+	data->pos        = malloc(MAXLINES*sizeof(int));
+	data->nc         = malloc(MAXLINES*sizeof(int));
+	data->c          = malloc(MAXLINES*sizeof(int));
 	data->segment_id = malloc(MAXLINES*sizeof(int));
 	
-	int ilambda = 0 ;
+	int ilambda = 0,status ;
 	float lambda[13] = {0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000};
 	node* el, *head;
 	head = malloc(sizeof(node));
 	head->prev = NULL;
 	heap* h = malloc(sizeof(heap));
 	el = head;
-	nlines = list_of_file(  head  , data );
+	nlines = list_of_file( buffer,  head  , data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
 	data->theta      =  realloc(data->theta,nlines*sizeof(float));
 	data->loglik     =  realloc(data->loglik,nlines*sizeof(float));
@@ -467,16 +498,6 @@ int main(int argc, char* argv[]){
 	
 	h->heap = malloc(nlines*sizeof(node*));
 	h->size = 0;
-	
-	//initialize  lik
-	//fprintf(stderr,"initialize lik...");
-	//el=head;
-	//while(el!=NULL){
-	//	update_lik(el,data);
-	//	el = el->next;
-	//}
-	//fprintf(stderr,"done\n");
-	//initialize delta
 
 	fprintf(stderr,"initialize delta...");
 	el=head;
