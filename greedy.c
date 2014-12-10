@@ -176,6 +176,19 @@ void delta_lik( node* el, table* data ){
 void delta_sdev(node* el, table* data){
 }
 
+
+void fill_node(node* el, table* data, int i){
+		el->from = i;
+		el->to   = i;
+		el->loglik = data->loglik[i];
+		el->delta = 0 ;
+		el->segment_id = i;	
+		el->sum_nc += data->nc[i];
+		el->sum_c  += data->c[i];
+		el->sumtheta += data->theta[i];
+		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
+}
+
 int list_of_file(FILE* in, char* buffer , node* head, table* data ,int* status){
 	char* refchr = malloc( LINE*sizeof(char) );
 	char* tmp = malloc( LINE*sizeof(char) );
@@ -197,20 +210,16 @@ int list_of_file(FILE* in, char* buffer , node* head, table* data ,int* status){
 		data->segment_id[i] = i;
 		data->theta[i]  = (float)data->nc[i]/(data->nc[i]+data->c[i]);
 		data->loglik[i] = dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
-		el->from = i;
-		el->to   = i;
-		el->loglik = data->loglik[i];
-		el->delta = 0 ;
-		el->segment_id = i;
+		fill_node(el,data,i);
 		el->next = malloc(sizeof(node));
+		if (el->next==NULL){
+			fprintf(stderr,"out of memory at line %d\n",__LINE__);
+			exit(1);
+		}
 		el->next->prev = el;
-		el->sum_nc += data->nc[i];
-		el->sum_c  += data->c[i];
-		el->sumtheta += data->theta[i];
-		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
 		el = el->next;
 		i++;
-		buffer =	fgets(buffer,LINE,in);
+		buffer = fgets(buffer,LINE,in);
 		if (feof(in)) {
 			*status=FILE_END;
 			break;
@@ -220,14 +229,24 @@ int list_of_file(FILE* in, char* buffer , node* head, table* data ,int* status){
 			exit(1);
 		}
 	}
-	if (el->prev!=NULL) {
-		fprintf(stderr,"el->prev:\n");
-		print_node(el->prev,data->pos);
-		fprintf(stderr,"going to free:\n");
-		print_node(el->prev->next,data->pos);
-		free(el->prev->next);
-		el->prev->next=NULL;
-	} 
+	switch(*status){
+		case FILE_END:
+			if (el->prev==NULL){
+				fprintf(stderr,"el->prov is NULL\n");
+				exit(1);
+			}
+			el->prev->next=NULL;
+			free(el); el=NULL;
+			break;
+		case CHANGE_CHROM:
+			el->prev->next=NULL;	
+			free(el);
+			el=NULL;
+			break;
+		default:
+			fprintf(stderr,"illegal status:%d at line %d\n",*status,__LINE__);
+			exit(1);
+	}
 	free(refchr); free(tmp);
 	refchr=NULL; tmp=NULL;
 	return i;
@@ -458,7 +477,7 @@ int main(int argc, char* argv[]){
 	#else
 	fprintf(stderr,"Assert enabled.\n");
 	#endif
-	int i,mergec=0;
+	int i,mergec;
 	int nlines,le;
 	char* buffer=malloc(LINE*sizeof(char));
 	FILE *in;
@@ -481,10 +500,15 @@ int main(int argc, char* argv[]){
 
 	table* data;
 	
-	int ilambda = 0,status ;
-	float lambda[13] = {0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000};
+	int ilambda,status ;
+	float lambda[13] = {0.1,0.2,0.5,
+	1,2,5,
+	10,20,50,
+	100,200,500,1000};
 	node* el, *head;
 	heap* h;	
+	node* maxn;
+	node* tmpnext;
 	
 	buffer = fgets(buffer,LINE,in);
 
@@ -511,7 +535,9 @@ read:
 
 	nlines = list_of_file( in, buffer,  head  , data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
+
 	
+
 	data->theta      =  realloc(data->theta,nlines*sizeof(float));
 	data->loglik     =  realloc(data->loglik,nlines*sizeof(float));
 	data->pos        =  realloc(data->pos,nlines*sizeof(int));
@@ -529,31 +555,32 @@ read:
 	el=head;
 	
 	while(1){
-			if ( el->next == NULL ) {
-				el->delta = -FLT_MAX;
-				heap_insert( h , el );
-				break;
-			}
-			delta_lik( el , data );
+		if ( el->next == NULL ) {
+			el->delta = -FLT_MAX;
 			heap_insert( h , el );
-			assert ( heap_wrong_index(h)==0 );
-			el = el->next;
+			break;
+		}
+		delta_lik( el , data );
+		heap_insert( h , el );
+		assert ( heap_wrong_index(h)==0 );
+		el = el->next;
 	}
 	fprintf(stderr,"done\n");
 	le=print_list(stderr,head,0);	
-	node* maxn;
-	node* tmpnext;
 	int loopc=0;
-	float totloglik;
+	float totloglik=0;
 	if (DEBUG) print_heap(h);
-	while(1 && le>1){
+	ilambda=0;
+	mergec=0;	
+	while(1){
 		if (DEBUG) print_heap(h);
 		maxn = heap_extract_max(h);
 		assert (heap_wrong_index(h)==0);
 		if (maxn->prev==NULL && maxn->next==NULL) break;
 		if ( (maxn->delta + lambda[ilambda]) >0 ){
 			/***** merge ****/
-			fprintf( stderr , "merging %d\n", maxn->segment_id );
+			fprintf( stderr , "merging %d @ lambda=%.4f maxn->delta=%.4f\n", 
+				maxn->segment_id,lambda[ilambda],maxn->delta );
 			if (DEBUG) {
 				fprintf(stderr,"maxn before merging\n");
 				print_node( maxn , data->pos );
@@ -626,9 +653,10 @@ read:
 			goto read;
 			break;
 		default:
-			fprintf(stderr,"illegal status:%d\n",status);
+			fprintf(stderr,"illegal status:%d at line %d\n",status,__LINE__);
 			exit(1);
 	}
+
 	if (in != stdin) fclose(in);
 	free(buffer);
 	return(0);
