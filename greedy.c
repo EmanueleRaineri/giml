@@ -67,24 +67,8 @@ float dbinom(int x, int size, float p){
 	return ( bcoeff + x*log(p) + (size-x)*log(1-p) );
 }
 
-int print_list(FILE* stream, node* head, float lambda){
-	int le = 0;	
-	node* el = head;
-	while(el!=NULL){
-		fprintf(stream,"%d\t",el->segment_id);
-		fprintf(stream, "%d\t",el->from);
-		fprintf(stream,"%d\t",el->to);
-		fprintf(stream,"%.4f\t",el->loglik);
-		fprintf(stream,"%.4f\t",el->delta);
-		fprintf(stream,"%.4f\n",lambda);
-		le++;
-		el = el->next;
-	}
-	return(le);
-}
-
 void print_node(node* el, int* pos){
-		fprintf(stderr,"-------------\n");
+		//fprintf(stderr,"-------------\n");
 		fprintf(stderr,"id:%d\t",el->segment_id);
 		fprintf(stderr,"from:%d[%d]\t",el->from,pos[el->from]);
 		fprintf(stderr,"to:%d[%d]\t",el->to,pos[el->to]);
@@ -92,8 +76,26 @@ void print_node(node* el, int* pos){
 		fprintf(stderr,"sum_c:%d\t",el->sum_c);
 		fprintf(stderr,"loglik:%.4f\t",el->loglik);
 		fprintf(stderr,"delta:%.4f\n",el->delta);
-		fprintf(stderr,"-------------\n");
+		//fprintf(stderr,"-------------\n");
 }
+
+int print_list(FILE* stream, node* head, int* pos, float lambda){
+	int le = 0;	
+	node* el = head;
+	while(el!=NULL){
+		//fprintf(stream,"%d\t",el->segment_id);
+	//	fprintf(stream, "%d\t",el->from);
+	//	fprintf(stream,"%d\t",el->to);
+	//	fprintf(stream,"%.4f\t",el->loglik);
+	//	fprintf(stream,"%.4f\t",el->delta);
+	//	fprintf(stream,"%.4f\n",lambda);
+		print_node(el,pos);
+		le++;
+		el = el->next;
+	}
+	return(le);
+}
+
 
 void update_sdev(node* el, table* data){
 	/*I can reuse the data structure I designed 
@@ -183,9 +185,9 @@ void fill_node(node* el, table* data, int i){
 		el->loglik = data->loglik[i];
 		el->delta = 0 ;
 		el->segment_id = i;	
-		el->sum_nc += data->nc[i];
-		el->sum_c  += data->c[i];
-		el->sumtheta += data->theta[i];
+		el->sum_nc = data->nc[i];
+		el->sum_c  = data->c[i];
+		el->sumtheta = data->theta[i];
 		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
 }
 
@@ -566,7 +568,7 @@ read:
 		el = el->next;
 	}
 	fprintf(stderr,"done\n");
-	le=print_list(stderr,head,0);	
+	le=print_list(stderr,head,data->pos,0);	
 	int loopc=0;
 	float totloglik=0;
 	if (DEBUG) print_heap(h);
