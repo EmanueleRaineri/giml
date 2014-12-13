@@ -20,5 +20,5 @@ test: out.gimli.2.ref out.gimli.2
 	diff $^
 
 clean:
-	rm -f gimli gimli_profile gimli_optimized out.gimli.2
+	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2
 

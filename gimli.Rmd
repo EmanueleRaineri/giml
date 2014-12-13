@@ -1,7 +1,7 @@
 ---
 title: Gimli
 author: Ema
-date: 2 December 2014
+date: 11 December 2014
 ---
 
 #Introduction
@@ -34,11 +34,11 @@ where the $4$ fields are chromosome, position along the chromosome, non converte
 
 ```gimli``` sits on the cluster at ```/home/devel/eraineri/shared/gimli```.
 
-At the moment you need to create a separate file to compute the segmentation, eg:
+There's no need to create explicitly a file with the right format to compute the segmentation: one can use
+the process substitution syntax of UNIX to prepare the input on the fly:
 
 ```
-zcat /scratch/devel/heath/Blueprint/Blueprint_8/G199_cpg.txt.gz  | awk '{if ($1=="chr10" && $2<=1.22e8 && $2>=1.12e8) print $1,$2,$6,$7}' > test
-gimli test > test.out 2>/dev/null 
+gimli <(zcat /scratch/devel/heath/Blueprint/Blueprint_8/G199_cpg.txt.gz  | awk '{if ($1=="chr10" && $2<=1.22e8 && $2>=1.12e8) print $1,$2,$6,$7}') > test.out 2>test.log
 ```
 
 I am experimenting with a region on chr10 which goes from 1.12e8 to 1.22e8; this corresponds to $83821$ positions 
@@ -74,6 +74,3 @@ source("stats_segmentation.R")
 	+introduce spatial constraints so as not to build long segments in regions where there are no CpGs.
 
 	+extend the same approach to DMRs
-
-	+allow for multiple chromosomes
-
