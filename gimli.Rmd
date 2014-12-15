@@ -65,6 +65,19 @@ source("stats_segmentation.R")
 ```
 
 
+#Examples
+
+##PMD region.
+
+For the above mentioned PMD region, this is the segmentation with $\lambda=1000$ across G199(green), G200(blue), G201(magenta),
+G202(cyan).
+
+![](G199.G200.G201.G202.png)
+
+
+
+
+
 #to do
 
 *on the biological side : check segments against imprinted regions, promoter regions, etc...
