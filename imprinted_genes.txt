@@ -1,0 +1,18 @@
+#coordinates on grch37 
+
+##predicted by computational and experimental identification of novel
+human imprinted genes
+
+Q5EBL5 Chromosome 1: 1,177,826-1,182,102 reverse strand.
+DIVL1 Chromosome 1: 1,270,656-1,284,730 reverse strand.
+TMEM1 Chromosome 1: 1,849,029-1,850,712 reverse strand.
+
+##from http://users.rcn.com/jkimball.ma.ultranet/BiologyPages/I/Imprinting.html
+
+in the father's copy of IGF2r the promoter is methylated
+
+Chromosome 6: 160,390,131-160,534,539
+
+as a curiosity, coordinates for the same gene in grch38
+
+Chromosome 6: 159,969,099-160,113,507
