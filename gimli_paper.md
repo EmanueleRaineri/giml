@@ -96,6 +96,13 @@ form $\exp(-\frac{D_{i,i+1}}{D_0})$ where $D_{i,i+1}$ is the distance between th
 
 #examples
 
+While one can rigorously test that the numbers computed by gimli are in accordance with the description
+of the algorithm given in this paper, the purpose of gimli is to help detect automatically interesting
+biological patterns in methylation data, and this can't be tested in any precise sense. To show that gimli is a useful tool
+ though, I will give 4 examples of figues which can be produced very quickly using it and are coherent with other data sets
+##visualization
+
+
 #implementation
 
 #bibliography
