@@ -19,6 +19,16 @@ out.gimli.2: gimli
 test: out.gimli.2.ref out.gimli.2 
 	diff $^
 
+
+gimli_paper.dvi: gimli_paper.tex gimli_paper.bib
+	latex gimli_paper.tex
+	bibtex gimli_paper
+	latex gimli_paper.tex
+	latex gimli_paper.tex
+
+gimli_paper.pdf: gimli_paper.dvi
+	dvipdf $^
+
 clean:
 	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2
 

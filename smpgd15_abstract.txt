@@ -4,45 +4,44 @@ especially in the field of epigenetics measurements
 (chromatin modification,
 Hi-C, whole genome bisulfite sequencing, and more), 
 it is useful to implement software 
-which summarize the data and extract patterns to help automatizing at least 
-part of the biological analysis. 
+which can quickly summarize the data and extract patterns to help automating 
+at least  part of the biological analysis. 
 
-In this respect, I am looking for ways to compute 
-segmentations of methylation values measured with 
+In this respect, I am looking at ways to compute 
+segmentations of methylation values determined by 
 whole genome bisulfite sequencing
 (hence inferred from the number of converted and non converted reads at each 
 position).  
+
 A segmentation joins adjacent position
-which have similar properties, while boundary between segments point to 
+which have similar properties, while the boundary between segments indicates 
 more or less abrupt changes
 in the signal which might relate to biological mechanisms. For example
-a drop in methylation in the promoter area is is some cases associated with 
+a drop in methylation in a promoter area is is some cases associated with 
 transcriptional activity of the corresponding gene; 
-segments with intermediate values might be associated to imprinted regions; 
+segments with intermediate values might be related to imprinted regions; 
 and so on and so forth.
 
-There are two salient aspects that must be considered when it comes to 
-segmenting methylation values : 
-first, this epigenetic mark seems to have effect at various genomic scales 
-(ranging from hundred of bases to megabases), hence a multiscale method 
+One salient aspects which must be considered when it comes to 
+analyzing methylation dataset is that this epigenetic mark seems 
+to have effect at various genomic scales 
+(ranging from hundred of bases to megabases), hence a multi scale method 
 is called for. 
-Second, measurements through whole genome bisulfite sequencing are affected by 
-sampling error which becomes more important at low coverage.
 
-I present a fast probabilistic model which, coupled with a known greedy 
+Here I introduce a fast probabilistic model which, coupled with a known greedy 
 algorithm for copy number detection 
 (of which I rewrote the implementation from scratch) 
-provides a method (aware of the sampling error) for producing automatic 
+calculates automatic 
 segmentations at different scales.
 
 I am using this method in my day-to-day work analyzing data for the Blueprint 
 EU project and hence can present 
-some practical examples of its utility. In particular I will show how this 
+some concrete examples of its usefulness. In particular I will show how this 
 kind of statistical modeling is very useful for 
 
-*visualization purposes
+*visualization 
 *comparison across samples
-*comparison with other kind of data which are naturally expressed as set of 
-segments (eg chromatin modifications)
-*definition of interesting regions in order to prioritize further analysis 
-(ie regions with abrupt, stark variations in the signal)
+*comparison with other kind of data which are naturally expressed as a set of 
+segments (e.g. chromatin modifications)
+*demarcation of unusual regions in order to direct further analysis 
+(i.e. regions with stark variations in the signal)
