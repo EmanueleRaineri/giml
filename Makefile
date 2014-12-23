@@ -20,7 +20,14 @@ test: out.gimli.2.ref out.gimli.2
 	diff $^
 
 
-gimli_paper.dvi: gimli_paper.tex gimli_paper.bib
+G199.G202.20.200.dmr.eps : example2.R
+	Rscript example2.R
+
+figures: out.correla.eps G199.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps  
+
+
+
+gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 	latex gimli_paper.tex
 	bibtex gimli_paper
 	latex gimli_paper.tex

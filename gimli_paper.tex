@@ -9,89 +9,186 @@
 \maketitle
 
 \begin{abstract}
-Due to the growing numbers of "tracks" of numerical values attached to the human genome,
-it is very useful to design algorithms which summarize the data
-and extract patterns to help automatizing at least part of the
-biological analysis. In this respect, I am looking for ways to compute 
-segmentations of  measured methylation values. A segmentation joins adjacent position
-which have similar properties, while boundary between segments point to more or less abrupt changes
-in the signal which might relate to biological mechanisms. For example
-a drop in methylation in the promoter area is is some cases associated with 
+Due to the growing numbers of tracks of numerical values attached to the 
+human genome, especially in the field of epigenetics measurements 
+(chromatin modification,
+Hi-C, whole genome bisulfite sequencing, and more), 
+it is useful to implement software 
+which can quickly summarize the data and extract patterns to help 
+automating at least  part of the biological analysis. 
+In this paper, I show one efficient way of computing 
+segmentations of methylation values determined by 
+whole genome bisulfite sequencing
+(hence inferred from the number of converted and non converted reads 
+at each 
+position).  
+A segmentation joins adjacent position
+which have similar properties, while the boundary between segments 
+indicates 
+more or less abrupt changes
+in the signal which might relate to biological mechanisms. 
+For example
+a drop in methylation in a promoter area is is some cases associated with 
 transcriptional activity of the corresponding gene; 
-segments with intermediate values might be associated to imprinted regions; and so on and so forth.
-When it comes to segmenting methylation values there are two salient aspects which cannot be ignored : first, this epigenetic mark seems to have effect at various genomic scales (ranging from hundred of bases to megabases), hence a multiscale method is called for. Second, measurements through whole genome bisulfite sequencing are affected by sampling error which becomes more important at low coverage.
-I present a fast probabilistic model which, coupled with a known greedy algorithm for copy number detection (of which I improved the implementation) provides a sampling-error-aware method for producing automatic segmentations at different scales.
-I am using this software in my day-to-day work analyzing data for the Blueprint project and will present some practical examples of its utility. 
-I am currently extending it so that I can use it to define differentially methylated regions (DMRs).
+segments with intermediate values might be related to imprinted regions; 
+and so on and so forth.
+One salient aspects which must be considered when it comes to 
+analyzing methylation dataset is that this epigenetic mark seems 
+to have effect at various genomic scales 
+(ranging from hundred of bases to megabases), hence a multi scale method 
+is called for. 
+Here I introduce a fast probabilistic model which, coupled with a known greedy 
+algorithm for copy number detection 
+(of which I rewrote the implementation from scratch) 
+calculates automatic 
+segmentations at different scales.
+I am using this method in my day-to-day work analyzing data for the Blueprint 
+EU project and hence can present 
+some concrete examples of its usefulness. In particular I will show how this 
+kind of statistical modeling is very useful for 
+visualization, comparison across samples,
+comparison with other kind of data which are naturally expressed as a set of 
+segments (e.g. chromatin modifications),  and demarcation of unusual regions in 
+order to direct further analysis (i.e. regions with stark variations in the signal).
 \end{abstract}
 
 \section{introduction}
 
-I present  a software which computes a multiscale segmentation of DNA methylation data acquired through whole genome bisulfite sequencng (EGBS).
-A segmentation is a statistical model of a dataset. When building a statistical model one treis to find a reasonable trade off between two 
-features of it: its goodness of fit and its complexity.
-In our case these two aspects have a very simple interpretation : the goodness of fit increases with the number of segments $N_S$ used to describe the 
-methylation data wherease the complexity of the model decreases with $N_S$.  
-At one extreme, representing the complete dataset with one big segment would give a very simple model with the worst possible fit and 
-at the other using many segments of length $1$ would give us a perfectly fitting complex summary of the data.
+Whole genome Bisulfite sequencing (WGBS) allows measurements of methylation 
+status with single base resolution across the whole genome. This tecnique makes 
+clear that the genome contains loci corresponding to sudden changes in methylation 
+and regions where this epigientic mark has a strong local
+correlation, in the sense the the methylation status at one position predicts 
+very well the levels nearby. 
+This local correlation has been observed many times ( for example
+here in the Bsmooth paper
+\cite{bsmooth}) and is confirmed in figure~\ref{corr} which is computed by 
+selecting at random $10^6$ pairs 
+of methylated loci in order to estimate the correlation as a function of the 
+distance separating them ( distances
+are binned with a resolution of $100$bp).
 
-The complexity of the model is linked to the typical scale of the segments used in the sense that if the typical block is very long one needs few of them to cover the genomic region under consideration.
-
+\begin{figure}\label{corr}
 \includegraphics[width=4cm,angle=270]{out.correla.eps}
+\end{figure}
+
+Another interesting aspect of this signal is that it possesses some sort of scale 
+invariance: variations can be observed both at the level of a single promoter
+region(hundred of bases, see for example XXX) and when looking at stretches
+of millions of bases.
+This entails two some problems when analyzing this kind of data: a rough
+running average with a window of many megabases might destroy interesting
+local detail, but at the same time large scale dynamics are also
+significant and must be looked at.
+I present  a software which computes a multiscale segmentation of DNA methylation 
+data acquired through whole genome bisulfite sequencng (WGBS) and
+helps making sense of the data and compare it across samples.
+A segmentation is a statistical model of a dataset. 
+In general, when building a statistical model one treis to find a reasonable 
+trade off between two 
+features of it: its goodness of fit and its complexity.
+In our case these two aspects have a very simple interpretation : the goodness 
+of fit increases with the number of segments $N_S$ used to describe the 
+methylation data wherease the complexity of the model decreases with $N_S$.  
+At one extreme, representing the complete dataset with one big segment would 
+give a very simple model with the worst possible fit and 
+at the other using many segments of length $1$ would give us a perfectly 
+fitting complex summary of the data.
+
+The complexity of the model is linked to the typical scale of the segments used
+in the sense that if the typical block is very long one needs few of them to 
+cover the genomic region under consideration.
+
 
 \section{the algorithm}
 
-The algorithm consists of three parts : a formula to evaluate quickly the goodness of fit of any given segmentation
-and a protocol to decide (greedily) wich close by segments to join depending on a coarseness parameter $\lambda$. This second
-part is an implementation of the algorithm described in the VEGA paper where it is used for copy number variation detection (which is in turn an adaptation of a 2 dimensional image analysis algorithm due to Mumford and Shah, cite xxx)
+The algorithm consists of three parts : a formula to evaluate quickly the 
+goodness of fit of any given segmentation
+and a protocol to decide (greedily) which  segments to join depending 
+on a coarseness parameter $\lambda$ and on the distance measured in bp along
+the genome between the segments been considered for merging. 
+The second part uses and  algorithm previously desscribed   (\cite{vega}) in 
+the context of copy number variation detection (which is in turn an adaptation 
+of a 2 dimensional image analysis algorithm due to Mumford and Shah, 
+\cite{mumfordshah})
 
-
-One starts with a collection of $N$ methylated positions (CpGs or not CpGs) indexed by $j=1,\dots,N$.. For human chromosome $1$ and at a 
-decent coverage one has $N \approx 2E6$. One also has a collection of $N_S$ segments (indexed by $i=1,\dots,N_S$), 
+One starts with a collection of $N$ methylated positions (CpGs or not CpGs) 
+indexed by $j=1,\dots,N$.. For human chromosome $1$ and at a 
+decent coverage one has $N \approx 2E6$. One also has a collection of $N_S$ 
+segments (indexed by $i=1,\dots,N_S$), 
 which at the beginning
-coincide with the methylated positions (i.e. is a collection of $N_S$ segments of length $1$ with $N_S=N$.).
-Last, one needs to assign a value to a parameter, $\lambda$ which controls the complexity of the final segmentation.
+coincide with the methylated positions ( i.e. it is a collection of $N_S$ 
+segments of length $1$ with $N_S=N$.).
+Finally, one needs to assign a value to a parameter, $\lambda$ which controls the 
+complexity of the final segmentation.
 
-the initial segmentation has a certain likelihood, which is obtained by summing the log likelihood of each point. In turn, 
-the log likelihood of a single CpG $i$ is evaluated as 
 
-\[\lik_i={\overline{n}_i+n \choose \overline{n}_i}\hat{\theta}_i^{\overline{n}_i}(1-\hat{\theta}_i)^{n_i+\overline{n}_i}\]
+
+The algorithm works by trying iteratively to join segments until this
+is no longer possible; the decision is taken looking at the change
+in the total likelyhood generated by the mergin of two given segments. 
+
+A given segmentation has a  likelihood, which is obtained by 
+summing the log likelihood of each segment. If the
+segment coincides with a single locus, 
+the log likelihood  is evaluated as 
+
+\[\lik_i={\overline{n}_i+n \choose \overline{n}_i}
+	\hat{\theta}_i^{\overline{n}_i}(1-\hat{\theta}_i)^{n_i+\overline{n}_i}\]
 \label{loglik}
+
 where
 
-$n_i$ and $\overline{n}_i$ are the converted and unconverted reads respectively and
+$n_i$ and $\overline{n}_i$ are the converted and unconverted reads respectively 
+and
 
 \[\hat{\theta}_i=\frac{\overline{n}_i}{\overline{n}_i+n_i}\]
 
-is the maximum likelihood estimation for the parameter of the binomial process which generates $\overline{n}_i$.
+is the maximum likelihood estimation for the parameter of the binomial process 
+which generates $\overline{n}_i$.
 
-More in general, the likelihdd of a segment containing of more than a single CpG  (for example a segment which includes all the positions from $j_1$ to $j_2$) is computed as in equation (\ref{loglik}) except for $\hat{\theta}$ which is now:
+More in general, the likelihood of a segment containing of more than a single CpG  
+(for example a segment which includes all the positions from $j_1$ to $j_2$) is 
+computed as in equation (\ref{loglik}) except for $\hat{\theta}$ which is now:
 
 \[
 \hat{\theta}=\sum_{j=j_1}^{j_2} \frac{\overline{n}_j}{n_j+\overline{n}_j}
 \]
 
 
-the total likelihood of the segmentation is given by $\mathcal{L}=\sum_i\mathcal{L}_i$.
+the total likelihood of the segmentation is given by 
+$\mathcal{L}=\sum_i\mathcal{L}_i$.
 
-Now for each pair of adjacent segments $(i,i+1)$ we can compute the loss in total likelihood that we get if we merge them
+Now for each pair of adjacent segments $(i,i+1)$ we can compute the loss in 
+total likelihood that we get if we merge them
 in one single segment
 
-\[\Delta \lik=\lik-L_i-L_{i+1}+L_{i,i+1}\]
+\[\Delta \lik=\lik-\mathcal{L}_i-\mathcal{L}_{i+1}+\mathcal{L}_{i,i+1}\]
 
-notice that $L \leq l_1+l_2$ hence this always results in a loss in total likelihood. This loss is compensated, though, by the fact the the number of segments decreases by $1$. To take into account this decrease in complexity we consider an adjustet likelihood change:
+notice that $\mathcal{L} \leq \mathcal{L}_1+\mathcal{L}_2$ hence this always 
+results in a loss in total 
+likelihood. This loss is compensated, though, by the fact the the number 
+of segments decreases by $1$. To take into account this decrease in 
+complexity we consider an adjustet likelihood change:
 $\Delta \lik = \Delta \lik+\lambda$.
 
-We look for the maximum $\tilde{\lik}$ and if it is positive, we merge the corresponding segments into one segment.
+We look for the maximum $\tilde{\lik}$ and if it is positive, we merge the
+corresponding segments into one segment.
 
-We then repeat this operation until we can't merge any more pair of adjacent segments; in this case we can decide to increment 
+We then repeat this operation until we can't merge any more pair of adjacent 
+segments; in this case we can decide to increment 
 $\lambda$ and try again, or to give up and exit the algorithm.
 
 \subsection{sparsity of CpGs}
 
-methylated sites are irregularly spaced along the genome and the variability introduced by the sequencing process might further increase the distance between adjacent sites.
-To avoid building segments which span long regions where no CpGs exist, we can multiply $\lambda$ by a penalty term of the
-form $\exp(-\frac{D_{i,i+1}}{D_0})$ where $D_{i,i+1}$ is the distance between the the rigth end of segment $i$ and the left end of segment $i+1$ and $D_0$ is aconstant which can be reasonably set to $1000$. 
+Methylated sites are irregularly spaced along the genome and the variability 
+introduced by the sequencing process might further increase the distance 
+between adjacent sites.
+To avoid building segments which span long regions where no CpGs exist, we 
+can multiply $\lambda$ by a penalty term of the
+form $\exp(-\frac{D_{i,i+1}}{D_0})$ where $D_{i,i+1}$ is the distance 
+between the the rigth end of segment $i$ and the left end of segment $i+1$ and 
+$D_0$ is aconstant which can be reasonably set to $1000$. 
 
 Hence the final expression for the adjusted likelihood change is :
 
@@ -99,19 +196,26 @@ $\Delta \lik = \Delta \lik+\lambda \exp(-\frac{D_{i,i+1}}{D_0}) $.
 
 \section{examples}
 
-While one can rigorously test that the numbers computed by gimli are in accordance with the description
-of the algorithm given in this paper, the purpose of gimli is to help detect automatically interesting
-biological patterns in methylation data, and this can't be tested in any precise sense. To show that gimli is a useful tool
- though, I will give 4 examples of figues which can be produced very quickly using it and are coherent with other data sets
+While one can rigorously test that the numbers computed by gimli are in 
+accordance with the description
+of the algorithm given in this paper, the purpose of gimli is to help 
+detect automatically interesting
+biological patterns in methylation data, and this can't be tested in any 
+precise sense. To show that gimli is a useful tool
+though, I will give 4 examples of figues which can be produced very quickly
+using it and are coherent with other data sets
 
 \subsection{visualization}
 
+\begin{figure}\label{ex1}
 \includegraphics[width=4cm,angle=270]{G199.G202.chr1.gimli.eps}
-
+\end{figure}
 
 \subsection{comparison across samples (DMRs)}
 
-
+\begin{figure}\label{ex1}
+\includegraphics[width=4cm,angle=270]{G199.G202.20.200.dmr.eps}
+\end{figure}
 
 \subsection{comparison with other kind of data}
 
@@ -121,8 +225,9 @@ segments (e.g. chromatin modifications)
 \subsection{demarcation of unusual regions} 
 in order to direct further analysis 
 (i.e. regions with stark variations in the signal)
+
 \section{implementation}
 
 \bibliography{gimli_paper}
-
+\bibliographystyle{plain}
 \end{document}

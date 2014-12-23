@@ -20,12 +20,44 @@ libgimli$plot.segments<-function( seg ,  lb , ub, col ){
 	}
 }
 #
-libgimli$plot.dmr<-function( dmr ,  lb , ub, col1 , col2 ){
-	
+libgimli$plot.dmr<-function( dmr ,  lb , ub, color1 , color2 ){	
+	plot( 1 , type="n", xlab="", ylab="", 
+	xlim=c(lb, ub), 
+	ylim=c(-0.1, 1.1)
+	)
+	for (i in 1:nrow(dmr)){
+		if ( dmr[i,"start1"] > ub || dmr[i,"end1"] < lb ) next
+		lines(c(dmr[i,"start1"],dmr[i,"end1"]),
+		c(dmr[i,"mle1"],dmr[i,"mle1"]),
+		col=color1,lwd=2)
+		lines(c(dmr[i,"start2"],dmr[i,"end2"]),
+		c(dmr[i,"mle2"],dmr[i,"mle2"]),
+		col=color2,lwd=2)
+	}
+}
+#
+libgimli$plot.intersected.dmr<-function( dmr ,  lb , ub, color1, color2 ){	
+	plot( 1 , type="n", xlab="", ylab="", 
+	xlim=c(lb, ub), 
+	ylim=c(-0.1, 1.1)
+	)
+	for (i in 1:nrow(dmr)){
+		if ( dmr[i,"start1"] > ub || dmr[i,"end1"] < lb ) next
+		a<-	dmr[i,"start1"]
+		b<- dmr[i,"end1"]
+		c<- dmr[i,"start2"]
+		d<- dmr[i,"end2"]
+		xl<-max(a,c)
+		xr<-min(b,d)
+		y1<-dmr[i,"mle1"]
+		y2<-dmr[i,"mle2"]
+		lines(c(xl,xr), c(y1,y1), col=color1, lwd=2)
+		lines(c(xl,xr), c(y2,y2), col=color2, lwd=2)
+	}
 }
 #
 libgimli$plot.multiple.segments<-function( list_of_seg ,  lb , ub, colors ){
-	plot(1, type="n", xlab="", ylab="", 
+	plot( 1 , type="n", xlab="", ylab="", 
 	xlim=c(lb, ub), 
 	ylim=c(-0.1, 1.1)
 	)
@@ -42,14 +74,14 @@ libgimli$plot.multiple.segments<-function( list_of_seg ,  lb , ub, colors ){
 libgimli$theta.segment<-function(nc,c){
 	sum.nc<-sum(ns)
 	sum.c<-sum(c)
-	if (sum.nc + sum.c==0) {stop("undefined position")}
+	if ( sum.nc + sum.c == 0 ) {stop("undefined position")}
 	theta<-sum.nc/(sum.nc+sum.c)
 	return(theta)	
 }
 #
 libgimli$load.meth<-function(fname){
 	meth<-read.table(fname,stringsAsFactors=F)
-	names(meth)<-c("chrom","pos"
+	names(meth)<-c("chrom","pos",
 	"phred","meth","var","nc","c",
 	"cov1","cov2"
 	)
