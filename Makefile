@@ -1,3 +1,7 @@
+DATA  =~/Desktop/meth_data
+METH = $(DATA)/G199_cpg.chr1.txt.gz $(DATA)/G200_cpg.chr1.txt.gz $(DATA)/G201_cpg.chr1.txt.gz $(DATA)/G202_cpg.chr1.txt.gz
+GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(DATA)/G201_cpg.chr1.gimli.1000 $(DATA)/G202_cpg.chr1.gimli.1000 
+
 gimli: greedy.c
 	gcc -Wall  -o $@ greedy.c -lm
 
@@ -29,23 +33,37 @@ G199.G202.20.200.dmr.eps : example2.R
 
 
 G199.chr1.correla.txt:
-	zcat ~/Desktop/meth_data/G199_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G199.chr1.correla.txt
+	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G199.chr1.correla.txt
 
 G200.chr1.correla.txt:
-	zcat ~/Desktop/meth_data/G200_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G200.chr1.correla.txt
+	zcat $(DATA)/G200_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G200.chr1.correla.txt
 
 G201.chr1.correla.txt:
-	zcat ~/Desktop/meth_data/G201_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G201.chr1.correla.txt
+	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G201.chr1.correla.txt
 
 G202.chr1.correla.txt:
-	zcat ~/Desktop/meth_data/G202_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G202.chr1.correla.txt
+	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $2,$4}' | ./correla 1 2>/dev/null > G202.chr1.correla.txt
 
 out.correla.eps: G199.chr1.correla.txt G200.chr1.correla.txt G201.chr1.correla.txt G202.chr1.correla.txt
 	Rscript correla_fig.R
 
-figures: out.correla.eps G199.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps  
+G199.G200.G201.G202.chr1.gimli.eps: $(GIMLI1000)
+	Rscript figure2.R	
+
+gimli1000: $(GIMLI1000)
+
+$(GIMLI1000) : $(METH) 
+	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
+	zcat $(DATA)/G200_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G200_cpg.chr1.gimli.gz
+	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G201_cpg.chr1.gimli.gz
+	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G202_cpg.chr1.gimli.gz
+	zcat ~/Desktop/meth_data/G199_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G199_cpg.chr1.gimli.1000
+	zcat ~/Desktop/meth_data/G200_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G200_cpg.chr1.gimli.1000
+	zcat ~/Desktop/meth_data/G201_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G201_cpg.chr1.gimli.1000
+	zcat ~/Desktop/meth_data/G202_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G202_cpg.chr1.gimli.1000
 
 
+figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps  
 
 gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 	latex gimli_paper.tex

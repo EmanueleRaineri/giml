@@ -62,19 +62,24 @@ correlation, in the sense the the methylation status at one position predicts
 very well the levels nearby. 
 This local correlation has been observed many times ( for example
 here in the Bsmooth paper
-\cite{bsmooth}) and is confirmed in figure~\ref{corr} which is computed by 
-selecting at random $10^6$ pairs 
-of methylated loci in order to estimate the correlation as a function of the 
-distance separating them ( distances
-are binned with a resolution of $100$bp).
-
+\cite{bsmooth}) and is confirmed in figure~\ref{corr} which I computed 
+first selecting at random $10^6$ pairs of  methylated loci; then binning
+them according to the distance between the members of the pair (I considered 20 
+bins corresponding to distance between $0$ and $100$bp,$100$ and $200$bp, etc\dots)
+finally computing for each bin the correlation in methylation values, by using the pairs
+contained it it.
+\begin{center}
 \begin{figure}\label{corr}
 \includegraphics[width=4cm,angle=270]{out.correla.eps}
+\caption{this plot is produced by extracting $1$ million random pairs of CpG loci;
+binning the pairs in $20$ different bins  according to the distance between the members
+of the pair (from $0-100$ to $1900-2000$); and computing the correlation in each bin,
+using the pairs contained in it.}
 \end{figure}
-
+\end{center}
 Another interesting aspect of this signal is that it possesses some sort of scale 
 invariance: variations can be observed both at the level of a single promoter
-region(hundred of bases, see for example XXX) and when looking at stretches
+region (hundred of bases, see for example XXX) and when looking at stretches
 of millions of bases.
 This entails two some problems when analyzing this kind of data: a rough
 running average with a window of many megabases might destroy interesting
@@ -98,7 +103,6 @@ fitting complex summary of the data.
 The complexity of the model is linked to the typical scale of the segments used
 in the sense that if the typical block is very long one needs few of them to 
 cover the genomic region under consideration.
-
 
 \section{the algorithm}
 
@@ -223,14 +227,26 @@ using it and are coherent with other data sets
 
 \subsection{visualization}
 
+In figure \ref{ex1} I plotted the methylation in blocks (with $\lambda=1000$) 
+across the whole of chromosome $1$ for $4$ Blueprint samples
+(G199,G200,G201,G202). Although the plot represents around $2$ millions of 
+CpGs per each sample, the reduction in complexity achieved by gimli makes it 
+possible to observe by eye a lot of interesting signal (in this case there is 
+an apparent loss of methylation across the $4$ samples, which are different 
+stages in the hematopoietic process).
+
 \begin{figure}\label{ex1}
-\includegraphics[width=4cm,angle=270]{G199.G202.chr1.gimli.eps}
+\includegraphics[width=4cm,angle=270]{G199.G200.G201.G202.chr1.gimli.eps}
+\caption{output of gimli, for $\lambda=1000$ for four Blueprint samples. The loss of
+methylation is clearly visible.}
 \end{figure}
+
 
 \subsection{comparison across samples (DMRs)}
 
 \begin{figure}\label{ex1}
 \includegraphics[width=4cm,angle=270]{G199.G202.20.200.dmr.eps}
+\caption{Differentially methylated regions : 
 \end{figure}
 
 \subsection{comparison with other kind of data}

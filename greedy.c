@@ -8,6 +8,7 @@
 #include <assert.h>
 //
 #define DEBUG 0
+#define D0 1000.0
 #define LINE 1000
 #define MAXLINES 2000000
 #define FILE_END 0
@@ -45,6 +46,11 @@ typedef struct heap{
 	unsigned int size;
 	node** heap;
 } heap;
+
+
+float dist_penalty(int d){
+	return (exp(-(float)d/D0));
+}
 
 float dbinom(int x, int size, float p){
 	if (p==1){
