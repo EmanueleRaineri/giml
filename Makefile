@@ -77,3 +77,5 @@ gimli_paper.pdf: gimli_paper.dvi
 clean:
 	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2 correla
 	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps
+
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b gencode.v19.TSS.notlow.chr1.promoters > active_promoters_intersect_gencode.txt
