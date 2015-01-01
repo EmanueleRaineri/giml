@@ -1,7 +1,7 @@
 DATA  =~/Desktop/meth_data
 METH = $(DATA)/G199_cpg.chr1.txt.gz $(DATA)/G200_cpg.chr1.txt.gz $(DATA)/G201_cpg.chr1.txt.gz $(DATA)/G202_cpg.chr1.txt.gz
 GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(DATA)/G201_cpg.chr1.gimli.1000 $(DATA)/G202_cpg.chr1.gimli.1000 
-
+BED=/Users/emanueleraineri/bedtools2/bin
 gimli: greedy.c
 	gcc -Wall  -o $@ greedy.c -lm
 
@@ -50,6 +50,11 @@ out.correla.eps: G199.chr1.correla.txt G200.chr1.correla.txt G201.chr1.correla.t
 G199.G200.G201.G202.chr1.gimli.eps: $(GIMLI1000)
 	Rscript figure2.R	
 
+gencode_promoters: gencode.v19.TSS.notlow.chr1.promoters
+
+gencode.v19.TSS.notlow.chr1.promoters: $(DATA)/gencode.v19.TSS.notlow.chr1.gff
+	awk 'BEGIN{FS="\t";OFS="\t"}{if ($$7=="+") {print $$1,$$4,$$4+1000,$$7}; if ($$7=="-") { print $$1,$$4-1000,$$4,$$7} if ($$7!="+" && $$7!="-") {print "NaN"} }' $^ > $@
+
 gimli1000: $(GIMLI1000)
 
 $(GIMLI1000) : $(METH) 
@@ -78,4 +83,9 @@ clean:
 	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2 correla
 	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps
 
-#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b gencode.v19.TSS.notlow.chr1.promoters > active_promoters_intersect_gencode.txt
+active_promoters: C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed
+
+C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed : C004GDH1_12_Blueprint_release_082014_segments.chr1.bed
+	awk '$$NF=="E5" || $$NF=="E6" || $$NF=="E7"' $^ > $@
+active_promoters_intersect_gencode.txt : active_promoters gencode.v19.TSS.notlow.chr1.promoters
+	$(BED)/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b gencode.v19.TSS.notlow.chr1.promoters > active_promoters_intersect_gencode.txt
