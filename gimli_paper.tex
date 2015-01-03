@@ -214,6 +214,22 @@ Hence the final expression for the adjusted likelihood change is :
 
 $\Delta \lik = \Delta \lik+\lambda \exp(-\frac{D_{i,i+1}}{D_0}) $.
 
+I can now refine quantitatively the assertion that the complexity of the model
+is linked to the typical lengths of the segments : as figure \ref{boxplot1} 
+shows the median length of the blocks increases with $\lambda$. This is 
+accompanied by a decrease in likelihood of the segments (\ref{boxplot2}
+
+\begin{figure}\label{boxplot1}
+\includegraphics[width=4cm,angle=270]{boxplot1.eps}
+\caption{Median lenght of blocks is higher at higher $\lambda$s.}
+\end{figure}
+
+\begin{figure}\label{boxplot2}
+\includegraphics[width=4cm,angle=270]{boxplot2.eps}
+\caption{Likelihood of blocks diminishes with $\lambda$.}
+\end{figure}
+
+
 \section{examples}
 
 While one can rigorously test that the numbers computed by gimli are in 
@@ -244,9 +260,28 @@ methylation is clearly visible.}
 
 \subsection{comparison across samples (DMRs)}
 
+It is easy to find regions which have starkly different 
+methylations across samples. One needs to find segments 
+from the first and the second batch which intersect spatially
+but correspond to non overlapping intervals of methylation 
+(the max value of one 
+segment is less than the minimum of the other).
+
+User can fine tune this procedure according to what exactly they 
+are looking for, taking into account which a standard deviation of $0.2$
+on the methylation measurements done with WGBS is not unusual.
+
+Also notice that I am not giving any algorithm to compute $p$-values
+or anything of the sort; first of all the credibility of each segment
+is measured by its loglikelihood, secondly users can choose statistical
+tests suited to the particula signal (and the particular scale)
+they are considering.
+
 \begin{figure}\label{ex1}
 \includegraphics[width=4cm,angle=270]{G199.G202.20.200.dmr.eps}
-\caption{Differentially methylated regions : }
+\caption{Differentially methylated regions : I considered segments corresponding to
+non overlapping intervals of methylation values (ie the max value of one 
+segment is less than the minimum of the other).}
 \end{figure}
 
 \subsection{comparison with other kind of data}

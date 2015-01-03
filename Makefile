@@ -68,7 +68,10 @@ $(GIMLI1000) : $(METH)
 	zcat ~/Desktop/meth_data/G202_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G202_cpg.chr1.gimli.1000
 
 
-figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps  
+boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
+	Rscript make_boxplot1.R
+
+figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps boxplot1.eps boxplot2.eps
 
 gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 	latex gimli_paper.tex
@@ -81,7 +84,7 @@ gimli_paper.pdf: gimli_paper.dvi
 
 clean:
 	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2 correla
-	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps
+	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps boxplot1.eps boxplot2.eps
 
 active_promoters: C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed
 
