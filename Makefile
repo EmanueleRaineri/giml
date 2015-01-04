@@ -92,3 +92,11 @@ C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed : C004GDH
 	awk '$$NF=="E5" || $$NF=="E6" || $$NF=="E7"' $^ > $@
 active_promoters_intersect_gencode.txt : active_promoters gencode.v19.TSS.notlow.chr1.promoters
 	$(BED)/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b gencode.v19.TSS.notlow.chr1.promoters > active_promoters_intersect_gencode.txt
+
+
+C004GDH1.active.C004GDH1_cpg.chr1.gimli.1000 : C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed C004GD51_cpg.chr1.gimli.1000
+	$(BED)/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b C004GD51_cpg.chr1.gimli.1000 -wao > C004GDH1.active.C004GDH1_cpg.chr1.gimli.1000	
+
+C004GDH1.active.C004GDH1_cpg.chr1.gimli.100 : C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed C004GD51_cpg.chr1.gimli.100
+	$(BED)/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b C004GD51_cpg.chr1.gimli.100 -wao > C004GDH1.active.C004GDH1_cpg.chr1.gimli.100	
+

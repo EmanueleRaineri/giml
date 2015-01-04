@@ -122,11 +122,46 @@ libgimli$take.slice<-function(rd,lb,ub){
 	rd[as.matrix(ov)[,2],]
 }
 #
+libgimli$rd.of.bed<-function(df){
+	pos<-IRanges(df[,2],df[,3])
+	RangedData(pos)
+}
+#
 libgimli$rd.of.meth<-function(df,col.pos,col.values){
 	#second columns of df must be a genomic coordinate
 	pos<-IRanges(df[,col.pos],df[,col.pos])
 	values<-df[,col.values]
 	RangedData(pos,values)
+}
+#
+libgimli$intersect.with.bed<-function( bed.rd , meth.rd ){
+	res<-matrix(1:(nrow(bed.rd)*6),nrow=nrow(bed.rd))
+	ov.bed.meth     <- findOverlaps(bed.rd,meth.rd)
+	ov.bed.meth.mat <- as.matrix(ov.bed.meth)
+	lb  <- min(ov.bed.meth.mat[,1])	
+	ub  <- max(ov.bed.meth.mat[,1])
+	keys<-unique(ov.bed.meth.mat[,1])
+	for ( i in 1:nrow(bed.rd)){
+		if (i %in% keys){
+			print(i)
+			slice<-meth.rd[ov.bed.meth.mat[ov.bed.meth.mat[,1]==i,2],]
+			res[i,1] <- bed[i,2]
+			res[i,2] <- bed[i,3]
+			res[i,3] <- nrow(slice)
+			mv <- slice$nc/(slice$nc+slice$c)
+			res[i,4]<-min(mv)
+			res[i,5]<-median(mv)
+			res[i,6]<-max(mv)
+		} else {
+			res[i,1] <- bed[i,2]
+			res[i,2] <- bed[i,3]
+			res[i,3] <- 0 
+			res[i,4]<- NA 
+			res[i,5]<- NA
+			res[i,6]<- NA
+		}
+	}
+	res
 }
 #
 while("libgimli" %in% search())

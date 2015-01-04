@@ -1,7 +1,8 @@
 \documentclass[11pt]{amsart}
 \usepackage{graphicx}
-
 \newcommand{\lik}{\ensuremath{\mathcal{L}}}
+\newcommand{\gimli}{\begin{verbatim}gimli\end{verbatim}}
+
 \begin{document}
 \title{Multiscale segmentation of methylation data}
 \author{Emanuele Raineri}
@@ -99,14 +100,13 @@ At one extreme, representing the complete dataset with one big segment would
 give a very simple model with the worst possible fit and 
 at the other using many segments of length $1$ would give us a perfectly 
 fitting complex summary of the data.
-
 The complexity of the model is linked to the typical scale of the segments used
 in the sense that if the typical block is very long one needs few of them to 
 cover the genomic region under consideration.
 
 \section{the algorithm}
 
-Gimli consists of three parts : a formula to evaluate quickly the 
+\gimli consists of three parts : a formula to evaluate quickly the 
 goodness of fit of any given segmentation
 and a protocol to decide (greedily) which  segments to join depending 
 on a coarseness parameter $\lambda$ and on the distance measured in bp along
@@ -171,10 +171,8 @@ computed as in equation (\ref{loglik}) except for $\hat{\theta}$ which is now:
 \hat{\theta}=\sum_{j=j_1}^{j_2} \frac{\overline{n}_j}{n_j+\overline{n}_j}
 \]
 
-
 As said, the total likelihood of the segmentation is given by 
 $\mathcal{L}=\sum_i\mathcal{L}_i$.
-
 
 Armed with this definition of likelihood (which is a proxy for goodness of fit) 
 we can explain more precisely the following step of the algorithm:
@@ -257,7 +255,6 @@ stages in the hematopoietic process).
 methylation is clearly visible.}
 \end{figure}
 
-
 \subsection{comparison across samples (DMRs)}
 
 It is easy to find regions which have starkly different 
@@ -289,28 +286,29 @@ segment is less than the minimum of the other).}
 which are naturally expressed as a set of 
 segments (e.g. chromatin modifications)
 
-
 I considered the chromatin segmentation on chromosome $1$ of the
 Blueprintsample C004GD. Extracted only the segments which correspond
 to the state of active promoter (there are $8861$ such segments, over a total
 of $28479$).
-I then independently built a list of promoters by downloading the transcription
-start sites characterized by the version $19$ of Gencode (the file is here:
-\begin{verbatim}
-http://genome.crg.es/~sdjebali/Gencode/version19/Fantom5_CAGE/Inputs/gencode.v19.TSS.notlow.gffA
-\end{verbatim}
-)
-and considering for each TSS an interval of $1000$ bp to its $5^\prime$.
-I filter the list of active promoters found by chromatin segmentation
-by retaining only those segment which intersect this list of promoters
-I have constructed from the Gencode TSS file.
+%\begin{verbatim}
+%http://genome.crg.es/~sdjebali/Gencode/version19/Fantom5_CAGE/Inputs/gencode.v19.TSS.notlow.gffA
+%\end{verbatim}
 
 Now, I expect that the methylation corresponding to active promoters should be
-low.
+low : this appears not to be the case. Infact, when one intersects the active
+promoters as defined by the Blueprint segmentation and the blocks of CpGs as 
+defined by \gimli (I also ask that the intersection between two segments covers
+at least $50\%$ of the chromatin state, and that he difference between
+the maximum and minimum methylation in a block is $\leq 0.2$) one finds
+that the distribution of the maximum likelihood $\theta$s for the 
+methlyated blocks has a median of $0.82$. This is puzzling and some 
+to be inverstigated more thoroughly in the near future and shows how \gimli
+can be used for checking quickly the consistency of a composite dataset.
 
-\subsection{demarcation of unusual regions} 
-in order to direct further analysis 
-(i.e. regions with stark variations in the signal)
+
+\subsection{Demarcation of unusual regions} 
+
+
 
 \section{implementation}
 
