@@ -1,7 +1,7 @@
 \documentclass[11pt]{amsart}
 \usepackage{graphicx}
 \newcommand{\lik}{\ensuremath{\mathcal{L}}}
-\newcommand{\gimli}{\begin{verbatim}gimli\end{verbatim}}
+\newcommand{\gimli}{\texttt{gimli} }
 
 \begin{document}
 \title{Multiscale segmentation of methylation data}
@@ -21,12 +21,10 @@ In this paper, I show one efficient way of computing
 segmentations of methylation values determined by 
 whole genome bisulfite sequencing
 (hence inferred from the number of converted and non converted reads 
-at each 
-position).  
+at each position).  
 A segmentation joins adjacent position
 which have similar properties, while the boundary between segments 
-indicates 
-more or less abrupt changes
+indicates more or less abrupt changes
 in the signal which might relate to biological mechanisms. 
 For example
 a drop in methylation in a promoter area is is some cases associated with 
@@ -41,11 +39,9 @@ is called for.
 Here I introduce a fast probabilistic model which, coupled with a known greedy 
 algorithm for copy number detection 
 (of which I rewrote the implementation from scratch) 
-calculates automatic 
-segmentations at different scales.
-I am using this method in my day-to-day work analyzing data for the Blueprint 
-EU project and hence can present 
-some concrete examples of its usefulness. In particular I will show how this 
+calculates automatic segmentations at different scales.
+I also present some concrete examples of its usefulness. 
+In particular I will show how this 
 kind of statistical modeling is very useful for 
 visualization, comparison across samples,
 comparison with other kind of data which are naturally expressed as a set of 
@@ -56,19 +52,21 @@ order to direct further analysis (i.e. regions with stark variations in the sign
 \section{introduction}
 
 Whole genome Bisulfite sequencing (WGBS) allows measurements of methylation 
-status with single base resolution across the whole genome. This tecnique makes 
-clear that the genome contains loci corresponding to sudden changes in methylation 
-and regions where this epigientic mark has a strong local
+status with single base resolution across an entire genome. This tecnique shows 
+that the genome contains some loci corresponding to sudden changes in methylation 
+and many more regions where this epigenetic mark has a strong local
 correlation, in the sense the the methylation status at one position predicts 
 very well the levels nearby. 
 This local correlation has been observed many times ( for example
-here in the Bsmooth paper
-\cite{bsmooth}) and is confirmed in figure~\ref{corr} which I computed 
+here in the Bsmooth paper \cite{bsmooth}) and is confirmed in 
+figure~\ref{corr} which I computed 
 first selecting at random $10^6$ pairs of  methylated loci; then binning
 them according to the distance between the members of the pair (I considered 20 
-bins corresponding to distance between $0$ and $100$bp,$100$ and $200$bp, etc\dots)
-finally computing for each bin the correlation in methylation values, by using the pairs
-contained it it.
+bins corresponding to distance between $0$ and $100$bp,$100$ and $200$bp, 
+etc\dots);
+finally computing for each bin the correlation in methylation values, 
+by using the pairs contained in it.
+
 \begin{center}
 \begin{figure}\label{corr}
 \includegraphics[width=4cm,angle=270]{out.correla.eps}
@@ -78,19 +76,21 @@ of the pair (from $0-100$ to $1900-2000$); and computing the correlation in each
 using the pairs contained in it.}
 \end{figure}
 \end{center}
-Another interesting aspect of this signal is that it possesses some sort of scale 
+
+Another interesting aspect of methylation is that it possesses some sort of scale 
 invariance: variations can be observed both at the level of a single promoter
 region (hundred of bases, see for example XXX) and when looking at stretches
-of millions of bases.
-This entails two some problems when analyzing this kind of data: a rough
+of millions of bases (cite XXX).
+This entails some problems when analyzing this kind of data: a rough
 running average with a window of many megabases might destroy interesting
-local detail, but at the same time large scale dynamics are also
+local detail, but at the same time large scale (slow) changes are also
 significant and must be looked at.
-I present  a software which computes a multiscale segmentation of DNA methylation 
-data acquired through whole genome bisulfite sequencng (WGBS) and
-helps making sense of the data and compare it across samples.
-A segmentation is a statistical model of a dataset. 
-In general, when building a statistical model one treis to find a reasonable 
+I present  a software (\gimli) which computes a multiscale segmentation of DNA methylation 
+data acquired through WGBS and helps making sense of the data and compare 
+it across samples.
+
+A segmentation is a statistical model of a dataset.
+In general, when building a statistical model one tries to find a reasonable 
 trade off between two 
 features of it: its goodness of fit and its complexity.
 In our case these two aspects have a very simple interpretation : the goodness 
@@ -99,14 +99,15 @@ methylation data wherease the complexity of the model decreases with $N_S$.
 At one extreme, representing the complete dataset with one big segment would 
 give a very simple model with the worst possible fit and 
 at the other using many segments of length $1$ would give us a perfectly 
-fitting complex summary of the data.
+fitting but very complex summary of the data.
 The complexity of the model is linked to the typical scale of the segments used
 in the sense that if the typical block is very long one needs few of them to 
 cover the genomic region under consideration.
 
 \section{the algorithm}
 
-\gimli consists of three parts : a formula to evaluate quickly the 
+\gimli's algorithm consists of two parts : 
+a formula to evaluate quickly the 
 goodness of fit of any given segmentation
 and a protocol to decide (greedily) which  segments to join depending 
 on a coarseness parameter $\lambda$ and on the distance measured in bp along
@@ -123,10 +124,10 @@ The algorithm takes in input a set of $N$ methylated positions
 decent coverage one has $N \approx 2E6$).
 and returns a set of blocks covering the same loci.
 By block (or segment) here I mean either a single position or a collection
-of contiguous positions. The way it works is by sewwping
+of contiguous positions. The way it works is by sweeping
 iteratively the current list of segments and evaluate whether any pair 
-of adjacent blocks can be conveniently merged into one. So how does one gone about
-deciding whether to merge? This is  done by checking whether the loss in 
+of adjacent blocks can be conveniently merged into one. So how does one gone 
+about deciding whether to merge? This is  done by checking whether the loss in 
 likelihood consequent to the merging is compensated (or more than compensated)
 by the reduction in complexity achieved by it.
 
@@ -140,10 +141,11 @@ complexity of the final segmentation.
 
 The algorithm works by trying iteratively to join segments until this
 is no longer possible; the decision is taken looking at the change
-in the total likelyhood generated by the mergin of two given segments. 
+in the total likelihood generated by the merging of two given segments. 
 
-I measure the likelihood of a segmentation as the sum of the loglikelihoods
-of all its segments. In turn the log lik of a block is defined as follows:
+I measure the likelihood of a segmentation as the sum of the log likelihoods
+of all its segments. In turn the log likelihood of a block is defined by thw
+two following formul\ae:
 
 If the
 segment coincides with a single locus, 
@@ -163,8 +165,9 @@ and
 is the maximum likelihood estimation for the parameter of the binomial process 
 which generates $\overline{n}_i$.
 
-More in general, the likelihood of a segment containing of more than a single CpG  
-(for example a segment which includes all the positions from $j_1$ to $j_2$) is 
+If (more in general) a block contains  more than a single CpG  
+(think for concreteness of a segment which includes all the positions from 
+$j_1$ to $j_2$) is 
 computed as in equation (\ref{loglik}) except for $\hat{\theta}$ which is now:
 
 \[
@@ -186,10 +189,10 @@ notice that $\mathcal{L} \leq \mathcal{L}_1+\mathcal{L}_2$ hence this always
 results in a loss in total 
 likelihood. This loss is compensated, though, by the fact the the number 
 of segments decreases by $1$. To take into account this decrease in 
-complexity we consider an adjustet likelihood change:
+complexity we consider an adjusted likelihood change:
 $\Delta \lik = \Delta \lik+\lambda$.
 
-We look for the maximum $\tilde{\lik}$ and if it is positive, we merge the
+We look for the maximum $\tilde{\Delta \lik}$ and if it is positive, we merge the
 corresponding segments into one segment.
 
 We then repeat this operation until we can't merge any more pair of adjacent 
@@ -201,7 +204,7 @@ $\lambda$ and try again, or to give up and exit the algorithm.
 Methylated sites are irregularly spaced along the genome and the variability 
 introduced by the sequencing process might further increase the distance 
 between adjacent sites.
-To avoid building segments which span long regions where no CpGs exist, we 
+To avoid building segments which span long regions where no CpGs exist, one 
 can multiply $\lambda$ by a penalty term of the
 form $\exp(-\frac{D_{i,i+1}}{D_0})$ where $D_{i,i+1}$ is the distance 
 between the the rigth end of segment $i$ and the left end of segment $i+1$ and 
@@ -215,7 +218,7 @@ $\Delta \lik = \Delta \lik+\lambda \exp(-\frac{D_{i,i+1}}{D_0}) $.
 I can now refine quantitatively the assertion that the complexity of the model
 is linked to the typical lengths of the segments : as figure \ref{boxplot1} 
 shows the median length of the blocks increases with $\lambda$. This is 
-accompanied by a decrease in likelihood of the segments (\ref{boxplot2}
+accompanied by a decrease in likelihood of the segments (\ref{boxplot2})
 
 \begin{figure}\label{boxplot1}
 \includegraphics[width=4cm,angle=270]{boxplot1.eps}
@@ -230,28 +233,28 @@ accompanied by a decrease in likelihood of the segments (\ref{boxplot2}
 
 \section{examples}
 
-While one can rigorously test that the numbers computed by gimli are in 
+While one can rigorously test that the numbers computed by \gimli are in 
 accordance with the description
 of the algorithm given in this paper, the purpose of gimli is to help 
 detect automatically interesting
 biological patterns in methylation data, and this can't be tested in any 
-precise sense. To show that gimli is a useful tool
-though, I will give 4 examples of figues which can be produced very quickly
-using it and are coherent with other data sets
+precise sense. To show that \gimli is a useful tool
+though, I will give 4 examples of analyses which can be produced very quickly
+using it. 
 
 \subsection{visualization}
 
 In figure \ref{ex1} I plotted the methylation in blocks (with $\lambda=1000$) 
 across the whole of chromosome $1$ for $4$ Blueprint samples
 (G199,G200,G201,G202). Although the plot represents around $2$ millions of 
-CpGs per each sample, the reduction in complexity achieved by gimli makes it 
+CpGs per each sample, the reduction in complexity achieved by \gimli makes it 
 possible to observe by eye a lot of interesting signal (in this case there is 
 an apparent loss of methylation across the $4$ samples, which are different 
 stages in the hematopoietic process).
 
 \begin{figure}\label{ex1}
 \includegraphics[width=4cm,angle=270]{G199.G200.G201.G202.chr1.gimli.eps}
-\caption{output of gimli, for $\lambda=1000$ for four Blueprint samples. The loss of
+\caption{output of \gimli, for $\lambda=1000$ for four Blueprint samples. The loss of
 methylation is clearly visible.}
 \end{figure}
 
@@ -261,16 +264,17 @@ It is easy to find regions which have starkly different
 methylations across samples. One needs to find segments 
 from the first and the second batch which intersect spatially
 but correspond to non overlapping intervals of methylation 
-(the max value of one 
+(the maximum value of one 
 segment is less than the minimum of the other).
 
-User can fine tune this procedure according to what exactly they 
-are looking for, taking into account which a standard deviation of $0.2$
-on the methylation measurements done with WGBS is not unusual.
+Users can fine tune this procedure according to what exactly they 
+are looking for, taking into account that a standard deviation of $0.2$
+on the methylation measurements done with WGBS is not unusual, hence
+DMRs must be substantially separated to avoid confusion with sampling error.
 
 Also notice that I am not giving any algorithm to compute $p$-values
 or anything of the sort; first of all the credibility of each segment
-is measured by its loglikelihood, secondly users can choose statistical
+is measured by its log likelihood, secondly users can choose statistical
 tests suited to the particula signal (and the particular scale)
 they are considering.
 
@@ -283,16 +287,13 @@ segment is less than the minimum of the other).}
 
 \subsection{comparison with other kind of data}
 
-which are naturally expressed as a set of 
-segments (e.g. chromatin modifications)
+There are many experiments in genomics the results of which are naturally 
+expressed as a set of segments (e.g. detection of chromatin modifications)
 
 I considered the chromatin segmentation on chromosome $1$ of the
 Blueprintsample C004GD. Extracted only the segments which correspond
 to the state of active promoter (there are $8861$ such segments, over a total
 of $28479$).
-%\begin{verbatim}
-%http://genome.crg.es/~sdjebali/Gencode/version19/Fantom5_CAGE/Inputs/gencode.v19.TSS.notlow.gffA
-%\end{verbatim}
 
 Now, I expect that the methylation corresponding to active promoters should be
 low : this appears not to be the case. Infact, when one intersects the active
@@ -304,7 +305,6 @@ that the distribution of the maximum likelihood $\theta$s for the
 methlyated blocks has a median of $0.82$. This is puzzling and some 
 to be inverstigated more thoroughly in the near future and shows how \gimli
 can be used for checking quickly the consistency of a composite dataset.
-
 
 \subsection{Demarcation of unusual regions} 
 
@@ -324,12 +324,13 @@ is less or equal than $0.7$.
 I also ask that such regions be bigger than $100$bp and contain more than 
 $5$CpG per hundred base pairs.
 
-
-
 \section{implementation}
 
-
-
+\gimli is written in \texttt{C}, and the source
+dode is available from the github page of the author. Together
+with \gimli I also distribute \texttt{libgimli.R},
+a set of R functions which can be used to produce plots and statistical
+analyses based on \gimli's output.
 
 \bibliography{gimli_paper}
 \bibliographystyle{plain}
