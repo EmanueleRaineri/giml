@@ -100,3 +100,6 @@ C004GDH1.active.C004GDH1_cpg.chr1.gimli.1000 : C004GDH1_12_Blueprint_release_082
 C004GDH1.active.C004GDH1_cpg.chr1.gimli.100 : C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed C004GD51_cpg.chr1.gimli.100
 	$(BED)/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b C004GD51_cpg.chr1.gimli.100 -wao > C004GDH1.active.C004GDH1_cpg.chr1.gimli.100	
 
+
+#zcat ~/Desktop/meth_data/G199_cpg.chr1.gimli.gz | awk '$3-$2>100 && $4/($3-$2)>=0.05 && $5>=0.3 && $7<=0.7' | awk '{print $0,$3-$2}' > G199.pmd
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a G199.pmd -b G200.pmd

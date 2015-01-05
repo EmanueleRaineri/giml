@@ -111,7 +111,7 @@ goodness of fit of any given segmentation
 and a protocol to decide (greedily) which  segments to join depending 
 on a coarseness parameter $\lambda$ and on the distance measured in bp along
 the genome between the segments been considered for merging. 
-The second part uses and  algorithm previously desscribed   (\cite{vega}) in 
+The second part uses and  algorithm previously described   (\cite{vega}) in 
 the context of copy number variation detection (which is in turn an adaptation 
 of a 2 dimensional image analysis algorithm due to Mumford and Shah, 
 \cite{mumfordshah}). Finally, the segmentation itself, together with some 
@@ -308,9 +308,28 @@ can be used for checking quickly the consistency of a composite dataset.
 
 \subsection{Demarcation of unusual regions} 
 
+Most of the CpGs in the human genome have either methylation $1$ or
+methylation $0$. This implies that those CpGs are methylated in the same
+way in all the cells of the sample used to run the WGBS protocol
+(of course in a single cell every position has either methylation $0$ or $1$:
+intermediate values in the measurements are given by the superposition of 
+many cells).
+
+Now, to show how \gimli can help in the search for unusual regions which
+can inspire further investigation, I chose to look at blocks with intermediate
+values of methylation $0.3 \leq \theta \leq 0.7$. In particular, for each block
+I ask that it minimum $\theta$ is bigger or equal than $0.3$ and its maximum $\theta$
+is less or equal than $0.7$.
+
+I also ask that such regions be bigger than $100$bp and contain more than 
+$5$CpG per hundred base pairs.
+
 
 
 \section{implementation}
+
+
+
 
 \bibliography{gimli_paper}
 \bibliographystyle{plain}

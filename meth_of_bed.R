@@ -1,6 +1,7 @@
 source("libgimli.R")
 
-bed.fname  <- "C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed"
+#bed.fname  <- "C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed"
+bed.fname  <- "gencode.v7.promoter.chr1.bed"
 meth.fname <- "~/Desktop/meth_data/C004GD51_cpg.chr1.txt.gz"
 
 if (!exists("meth")){
@@ -9,7 +10,7 @@ if (!exists("meth")){
 }
 
 meth.rd    <- libgimli$rd.of.meth(meth,2,c(6,7))
-bed.rd <-  
+bed.rd <- libgimli$rd.of.bed(bed)  
 #lb<-bed[2,2]
 #ub<-bed[2,3]
 #print(lb)
@@ -17,16 +18,7 @@ bed.rd <-
 #lb<-lb-1000
 #ub<-ub+1000
 
-
-for ( b in 1:nrow(bed) ){
-	lb <- bed[b,2]
-	ub <- bed[b,3]
-	meth.slice <- libgimli$take.slice(meth.rd,lb,ub)
-	#"Min."    "1st Qu." "Median"  "Mean"    "3rd Qu." "Max."
-	m <- meth.slice$nc/(meth.slice$nc+meth.slice$c)
-	s <- summary(m)
-	cat(lb,ub,length(m),unname(s["Min."]),unname(s["Median"]),unname(s["Max."]),"\n")
-}
+res<-libgimli$intersect.with.bed(bed.rd, meth.rd)
 
 #plot(start(meth.slice$ranges),meth.slice$nc/(meth.slice$nc+meth.slice$c),
 #	col="red",type='b',ylim=c(0,1))
