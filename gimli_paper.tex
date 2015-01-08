@@ -316,13 +316,9 @@ intermediate values in the measurements are given by the superposition of
 many cells).
 
 Now, to show how \gimli can help in the search for unusual regions which
-can inspire further investigation, I chose to look at blocks with intermediate
-values of methylation $0.3 \leq \theta \leq 0.7$. In particular, for each block
-I ask that it minimum $\theta$ is bigger or equal than $0.3$ and its maximum $\theta$
-is less or equal than $0.7$.
-
-I also ask that such regions be bigger than $100$bp and contain more than 
-$5$CpG per hundred base pairs.
+can inspire further investigation, I chose to look at sequences of blocks 
+which correspond to dips in the signal, regions where the methylation
+ratio goes from high to low and to high again.
 
 \section{implementation}
 
@@ -331,7 +327,6 @@ dode is available from the github page of the author. Together
 with \gimli I also distribute \texttt{libgimli.R},
 a set of R functions which can be used to produce plots and statistical
 analyses based on \gimli's output.
-
 \bibliography{gimli_paper}
 \bibliographystyle{plain}
 \end{document}

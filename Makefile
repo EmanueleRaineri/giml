@@ -2,6 +2,8 @@ DATA  =~/Desktop/meth_data
 METH = $(DATA)/G199_cpg.chr1.txt.gz $(DATA)/G200_cpg.chr1.txt.gz $(DATA)/G201_cpg.chr1.txt.gz $(DATA)/G202_cpg.chr1.txt.gz
 GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(DATA)/G201_cpg.chr1.gimli.1000 $(DATA)/G202_cpg.chr1.gimli.1000 
 BED=/Users/emanueleraineri/bedtools2/bin
+C004GDH1GIMLI:$(DATA)/C004GD51_cpg.chr1.gimli.gz
+
 gimli: greedy.c
 	gcc -Wall  -o $@ greedy.c -lm
 
@@ -100,6 +102,23 @@ C004GDH1.active.C004GDH1_cpg.chr1.gimli.1000 : C004GDH1_12_Blueprint_release_082
 C004GDH1.active.C004GDH1_cpg.chr1.gimli.100 : C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed C004GD51_cpg.chr1.gimli.100
 	$(BED)/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b C004GD51_cpg.chr1.gimli.100 -wao > C004GDH1.active.C004GDH1_cpg.chr1.gimli.100	
 
-
 #zcat ~/Desktop/meth_data/G199_cpg.chr1.gimli.gz | awk '$3-$2>100 && $4/($3-$2)>=0.05 && $5>=0.3 && $7<=0.7' | awk '{print $0,$3-$2}' > G199.pmd
 #/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a G199.pmd -b G200.pmd
+
+gencode.chr1.genes.unique.tss :  gencode.v19.TSS.notlow.chr1.gff
+	cat $^ | awk '{print $$10}' | sort | uniq -c | awk '{if ($$1==1) print $$2}' > $@
+
+uniq.tss.coords: filter_gff.py gencode.chr1.genes.unique.tss gencode.v19.TSS.notlow.chr1.gff
+	python filter_gff.py > uniq.tss.coords
+
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a uniq.tss.coords -b $(C004GDH1GIMLI) -wao |  awk '$5!="." && $11-$9<0.3' | awk '{print $10}' | Rscript -e "summary(as.numeric(readLines(file('stdin'))))"
+
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a uniq.tss.coords -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz  -wao |  awk '$5!="." && $11-$9<0.3' > uniq.tss.C004GD51.gimli
+
+#awk '{print $0,$2$3}'  | awk '{if (a[$NF]==1) next; else {a[$NF]=1;print $0}}'
+
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz -wao | awk '$5!="."' | awk '$7-$6>100 && $8/($7-$6)>0.05'  | awk '{print $0,$2$3}'  | awk '{if (a[$NF]==1) next; else {a[$NF]=1;print $0}}'
+
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz -wao | awk '$5!="."' | awk '$8/($7-$6+1)>0.05'  | awk '{print $0,$2$3}'  | awk '{if (a[$NF]==1) next; else {a[$NF]=1;print $0}}' > active.vs.gimli.txt
+
+#/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz -wao | awk '$5!="."' | awk '$7-$6+1>100 && $8/($7-$6+1)>0.05'  | awk '{print $0,$2$3}'  | awk '{if (a[$NF]==1) next; else {a[$NF]=1;print $0}}' > active.vs.gimli.txt
