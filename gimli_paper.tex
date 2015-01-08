@@ -1,7 +1,7 @@
 \documentclass[11pt]{amsart}
 \usepackage{graphicx}
 \newcommand{\lik}{\ensuremath{\mathcal{L}}}
-\newcommand{\gimli}{\texttt{gimli} }
+\newcommand{\gimli}{\texttt{gimli}}
 
 \begin{document}
 \title{Multiscale segmentation of methylation data}
@@ -40,7 +40,7 @@ Here I introduce a fast probabilistic model which, coupled with a known greedy
 algorithm for copy number detection 
 (of which I rewrote the implementation from scratch) 
 calculates automatic segmentations at different scales.
-I also present some concrete examples of its usefulness. 
+I also present some concrete examples of its utility. 
 In particular I will show how this 
 kind of statistical modeling is very useful for 
 visualization, comparison across samples,
@@ -58,19 +58,19 @@ and many more regions where this epigenetic mark has a strong local
 correlation, in the sense the the methylation status at one position predicts 
 very well the levels nearby. 
 This local correlation has been observed many times ( for example
-here in the Bsmooth paper \cite{bsmooth}) and is confirmed in 
+in the Bsmooth paper \cite{bsmooth}) and is confirmed in 
 figure~\ref{corr} which I computed 
 first selecting at random $10^6$ pairs of  methylated loci; then binning
 them according to the distance between the members of the pair (I considered 20 
 bins corresponding to distance between $0$ and $100$bp,$100$ and $200$bp, 
 etc\dots);
-finally computing for each bin the correlation in methylation values, 
-by using the pairs contained in it.
+finally computing for each bin the correlation in methylation values 
+across the pairs contained in it.
 
 \begin{center}
 \begin{figure}\label{corr}
 \includegraphics[width=4cm,angle=270]{out.correla.eps}
-\caption{this plot is produced by extracting $1$ million random pairs of CpG loci;
+\caption{This plot is produced by extracting $1$ million random pairs of CpG loci;
 binning the pairs in $20$ different bins  according to the distance between the members
 of the pair (from $0-100$ to $1900-2000$); and computing the correlation in each bin,
 using the pairs contained in it.}
@@ -85,7 +85,8 @@ This entails some problems when analyzing this kind of data: a rough
 running average with a window of many megabases might destroy interesting
 local detail, but at the same time large scale (slow) changes are also
 significant and must be looked at.
-I present  a software (\gimli) which computes a multiscale segmentation of DNA methylation 
+I present  a software (\gimli) which computes a multiscale segmentation 
+of DNA methylation 
 data acquired through WGBS and helps making sense of the data and compare 
 it across samples.
 
@@ -95,7 +96,7 @@ trade off between two
 features of it: its goodness of fit and its complexity.
 In our case these two aspects have a very simple interpretation : the goodness 
 of fit increases with the number of segments $N_S$ used to describe the 
-methylation data wherease the complexity of the model decreases with $N_S$.  
+methylation data whereas the complexity of the model decreases with $N_S$.  
 At one extreme, representing the complete dataset with one big segment would 
 give a very simple model with the worst possible fit and 
 at the other using many segments of length $1$ would give us a perfectly 
@@ -109,11 +110,15 @@ cover the genomic region under consideration.
 \gimli's algorithm consists of two parts : 
 a formula to evaluate quickly the 
 goodness of fit of any given segmentation
-and a protocol to decide (greedily) which  segments to join depending 
-on a coarseness parameter $\lambda$ and on the distance measured in bp along
+and a protocol to decide (greedily) which  segments to join depending on
+\begin{itemize}
+\item{}a coarseness parameter $\lambda$ and on 
+\item{}the distance measured in bp along
 the genome between the segments been considered for merging. 
-The second part uses and  algorithm previously described   (\cite{vega}) in 
-the context of copy number variation detection (which is in turn an adaptation 
+\end{itemize}
+The second part uses and  algorithm previously described   in 
+the context of copy number variation detection (\cite{vega}, which is in 
+turn an adaptation 
 of a 2 dimensional image analysis algorithm due to Mumford and Shah, 
 \cite{mumfordshah}). Finally, the segmentation itself, together with some 
 helpful statistics, is printed out for the use to analyze.
@@ -151,8 +156,9 @@ If the
 segment coincides with a single locus, 
 the log likelihood  is evaluated as 
 
-\[\lik_i={\overline{n}_i+n \choose \overline{n}_i}
-	\hat{\theta}_i^{\overline{n}_i}(1-\hat{\theta}_i)^{n_i+\overline{n}_i}\]
+\[\lik_i=\log {\overline{n}_i+n \choose \overline{n}_i} +
+	{\overline{n}_i}\hat{\theta}_i+
+	n_i(1-\hat{\theta}_i)
 \label{loglik}
 
 where
@@ -171,8 +177,21 @@ $j_1$ to $j_2$) is
 computed as in equation (\ref{loglik}) except for $\hat{\theta}$ which is now:
 
 \[
-\hat{\theta}=\sum_{j=j_1}^{j_2} \frac{\overline{n}_j}{n_j+\overline{n}_j}
+\hat{\theta}=\frac{\overline{n}}{n + \overline{n}}
 \]
+
+where
+
+\[
+	\overline{n}=\sum_{j=j_1}^{j_2} \overline{n}_j}
+\]
+
+and
+
+\[
+	n=\sum_{j=j_1}^{j_2} n_j}
+\]
+
 
 As said, the total likelihood of the segmentation is given by 
 $\mathcal{L}=\sum_i\mathcal{L}_i$.

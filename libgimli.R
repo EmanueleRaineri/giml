@@ -1,6 +1,14 @@
 library(IRanges)
 libgimli = new.env()
 #
+libgimli$loglik<-function(nonconv , conv){
+	nc<-sum(nonconv)
+	co<sum(conv)
+	theta<-nc/(co+nc)
+	dbinom(x=nc,size=nc+co,p=theta,log=T)+
+	nc*theta+co*(1-theta)
+}
+#
 libgimli$load.segments<-function(fname){
 	#returns a data frame
 	seg<-read.table(fname,stringsAsFactors=F)
