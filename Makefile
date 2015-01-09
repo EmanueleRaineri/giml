@@ -122,3 +122,8 @@ uniq.tss.coords: filter_gff.py gencode.chr1.genes.unique.tss gencode.v19.TSS.not
 #/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz -wao | awk '$5!="."' | awk '$8/($7-$6+1)>0.05'  | awk '{print $0,$2$3}'  | awk '{if (a[$NF]==1) next; else {a[$NF]=1;print $0}}' > active.vs.gimli.txt
 
 #/Users/emanueleraineri/bedtools2/bin/bedtools intersect -a C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz -wao | awk '$5!="."' | awk '$7-$6+1>100 && $8/($7-$6+1)>0.05'  | awk '{print $0,$2$3}'  | awk '{if (a[$NF]==1) next; else {a[$NF]=1;print $0}}' > active.vs.gimli.txt
+
+uniq.tss.extended.100.coords : uniq.tss.coords
+	awk 'BEGIN{OFS="\t"}{print $$1,$$2-100,$$3+100,$$4}' uniq.tss.coords > uniq.tss.extended.100.coords
+
+#awk 'BEGIN{OFS="\t"}{if ($4=="+") {print $1,$2-100,$3,$4} else {print $1,$2,$3+100,$4}}' uniq.tss.coords > uniq.tss.promoters.100.coords

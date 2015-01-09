@@ -1,8 +1,11 @@
 source("libgimli.R")
-
+args <- commandArgs(trailingOnly = TRUE)
 #bed.fname  <- "C004GDH1_12_Blueprint_release_082014_segments.chr1.active_promoter.bed"
-bed.fname  <- "gencode.v7.promoter.chr1.bed"
-meth.fname <- "~/Desktop/meth_data/C004GD51_cpg.chr1.txt.gz"
+#bed.fname  <- "gencode.v7.promoter.chr1.bed"
+#meth.fname <- "~/Desktop/meth_data/C004GD51_cpg.chr1.txt.gz"
+
+bed.fname <- args[1]
+meth.fname <- args[2]
 
 if (!exists("meth")){
 	meth<-libgimli$load.meth(meth.fname)
