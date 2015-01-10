@@ -126,4 +126,13 @@ uniq.tss.coords: filter_gff.py gencode.chr1.genes.unique.tss gencode.v19.TSS.not
 uniq.tss.extended.100.coords : uniq.tss.coords
 	awk 'BEGIN{OFS="\t"}{print $$1,$$2-100,$$3+100,$$4}' uniq.tss.coords > uniq.tss.extended.100.coords
 
-#awk 'BEGIN{OFS="\t"}{if ($4=="+") {print $1,$2-100,$3,$4} else {print $1,$2,$3+100,$4}}' uniq.tss.coords > uniq.tss.promoters.100.coords
+
+
+S000RD13.gene.body.txt : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
+	cat $^ | awk 'BEGIN{FS="\t"}{print $$1,$$4,$$5,$$7}' | awk '$$1=="chr1"'  > $@ 
+
+S000RD13.tss.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
+	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"}{if ($$7=="+") {print $$1,$$4,$$4,$$7} else {print $$1,$$5,$$5,$$7}}' | awk '$$1=="chr1"'  > $@ 
+
+S000RD13.promoters.1000.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
+	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"} {if ($$7=="+") {print $$1,$$4-1000,$$4,$$7} else {print $$1,$$5,$$5+1000,$$7} }' | awk '$$1=="chr1"' > $@ 

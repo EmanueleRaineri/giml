@@ -9,11 +9,11 @@ meth.fname <- args[2]
 
 if (!exists("meth")){
 	meth<-libgimli$load.meth(meth.fname)
-	bed<-read.table( bed.fname , stringsAsFactors=F )
+	bed<-read.table( bed.fname , stringsAsFactors=F ,sep="\t")
 }
 
 meth.rd    <- libgimli$rd.of.meth(meth,2,c(6,7))
-bed.rd <- libgimli$rd.of.bed(bed)  
+bed.rd     <- libgimli$rd.of.bed(bed)  
 #lb<-bed[2,2]
 #ub<-bed[2,3]
 #print(lb)
