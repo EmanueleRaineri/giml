@@ -131,14 +131,27 @@ uniq.tss.extended.100.coords : uniq.tss.coords
 S000RD13.gene.body.txt : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
 	cat $^ | awk 'BEGIN{FS="\t"}{print $$1,$$4,$$5,$$7}' | awk '$$1=="chr1"'  > $@ 
 
+###example 3###
+
 S000RD13.tss.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
 	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"}{if ($$7=="+") {print $$1,$$4,$$4,$$7} else {print $$1,$$5,$$5,$$7}}' | awk '$$1=="chr1"'  > $@ 
 
-S000RD13.promoters.1000.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
-	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"} {if ($$7=="+") {print $$1,$$4-1000,$$4,$$7} else {print $$1,$$5,$$5+1000,$$7} }' | awk '$$1=="chr1"' > $@ 
 
-#	/Users/emanueleraineri/bedtools2/bin/bedtools intersect -b ~/Desktop/meth_data/C004GD51_cpg.chr1.gimli.gz -a S000RD13.tss.bed > C004GD51_cpg.chr1.gimli.tss.bed
+C004GD51_cpg.chr1.gimli.tss.bed : $(DATA)/C004GD51_cpg.chr1.gimli.gz S000RD13.tss.bed
+	/Users/emanueleraineri/bedtools2/bin/bedtools intersect -b $(DATA)/C004GD51_cpg.chr1.gimli.gz -a S000RD13.tss.bed > $@ 
 
-#awk 'BEGIN{FS=";"}{print $1,$3}' C004GD12.gene_quantification.gem_grape_crg.20130415.gff | awk '$1=="chr1"' | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$4,$5,$7,$9}' | sed -e "s/gene_id//g " | sed -e "s/\"//g" | sed -e "s/RPKM//g" | tr -s ' ' '\t' > C004GD12.rpkm
 
+C004GD12.rpkm: C004GD12.gene_quantification.gem_grape_crg.20130415.gff 
+	awk 'BEGIN{FS=";"}{print $$1,$$3}' $^ | awk '$$1=="chr1"' | awk 'BEGIN{FS="\t";OFS="\t"}{print $$1,$$4,$$5,$$7,$$9}' | sed -e "s/gene_id//g " | sed -e "s/\"//g" | sed -e "s/RPKM//g" | tr -s ' ' '\t' > $@
+
+C004GD51_cpg.chr1.gimli.tss.filtered.bed : filter.tss.gimli.py C004GD51_cpg.chr1.gimli.tss.bed
+	python filter.tss.gimli.py > $@
+
+rpkm.vs.met : join.tss.rpkm.py C004GD51_cpg.chr1.gimli.tss.filtered.bed C004GD12.rpkm
+	python join.tss.rpkm.py > $@ 
+
+
+
+#S000RD13.promoters.1000.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
+#	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"} {if ($$7=="+") {print $$1,$$4-1000,$$4,$$7} else {print $$1,$$5,$$5+1000,$$7} }' | awk '$$1=="chr1"' > $@ 
 

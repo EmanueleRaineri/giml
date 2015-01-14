@@ -159,7 +159,7 @@ the log likelihood  is evaluated as
 \[\lik_i=\log {\overline{n}_i+n \choose \overline{n}_i} +
 	{\overline{n}_i}\hat{\theta}_i+
 	n_i(1-\hat{\theta}_i)
-\label{loglik}
+\]\label{loglik}
 
 where
 
@@ -183,13 +183,13 @@ computed as in equation (\ref{loglik}) except for $\hat{\theta}$ which is now:
 where
 
 \[
-	\overline{n}=\sum_{j=j_1}^{j_2} \overline{n}_j}
+	\overline{n}=\sum_{j=j_1}^{j_2} \overline{n}_j
 \]
 
 and
 
 \[
-	n=\sum_{j=j_1}^{j_2} n_j}
+	n=\sum_{j=j_1}^{j_2} n_j
 \]
 
 
@@ -306,38 +306,49 @@ segment is less than the minimum of the other).}
 
 \subsection{comparison with other kind of data}
 
-There are many experiments in genomics the results of which are naturally 
-expressed as a set of segments (e.g. detection of chromatin modifications)
+Many dataset in genomics consist in annotation of an underlying
+DNA sequence and hence are naturally expressed as segments. The
+fact that \gimli also generates annotated blocks allows one to
+integrate methylation data with other kind of information.
 
-I considered the chromatin segmentation on chromosome $1$ of the
-Blueprintsample C004GD. Extracted only the segments which correspond
-to the state of active promoter (there are $8861$ such segments, over a total
-of $28479$).
+As an example, I consider the set of $5227$ transcription start sites
+(TSS) on human chromosome $1$. I infer the TSSes from a list of 
+regions used for gene expression quantification in the Blueprint 
+consortium. For each of them, I also consider the RPKM of the corresponding
+gene in the sample $C004GD$. I then compute with \gimli the segmentation
+of the methylation measurements for chromosome $1$ of $C004GD$.
 
-Now, I expect that the methylation corresponding to active promoters should be
-low : this appears not to be the case. Infact, when one intersects the active
-promoters as defined by the Blueprint segmentation and the blocks of CpGs as 
-defined by \gimli (I also ask that the intersection between two segments covers
-at least $50\%$ of the chromatin state, and that he difference between
-the maximum and minimum methylation in a block is $\leq 0.2$) one finds
-that the distribution of the maximum likelihood $\theta$s for the 
-methlyated blocks has a median of $0.82$. This is puzzling and some 
-to be inverstigated more thoroughly in the near future and shows how \gimli
-can be used for checking quickly the consistency of a composite dataset.
+My intent is to show what the methylation segments overlapping the TSSs
+say about the transcriptional activity of the nearby gene. Accordingly,
+I use bedtools to intersect the list of blocks produced by \gimli
+with the list of transcription start sites; since more than one \gimli
+block can overlap a given TSS (blocks with different $\lambda$s can 
+cover the same region) I choose the largest segment covering the TSS
+with the constraint thet the maximum and minimum value of methylation
+in the block must not differ by more than $0.3$.
+
+I then compare the distribution of RPKMs for genes corresponding
+to TSS covered by segments with $\hat{\theta}<0.5$ with the same distribution
+for genes adjacent to TSS covered by blocks with $\hat{\theta} \geq 0.5$
+
+\begin{figure}\label{ex3}
+\includegraphics[width=4cm,angle=270]{boxplot_example_3.eps}
+\caption{Segments with different $\hat{\theta}$ overlapping the TSS correspond
+to different distribution of the RPKMs of the corresponding genes.}
+\end{figure}
+
+
+
+
 
 \subsection{Demarcation of unusual regions} 
-
-Most of the CpGs in the human genome have either methylation $1$ or
-methylation $0$. This implies that those CpGs are methylated in the same
-way in all the cells of the sample used to run the WGBS protocol
-(of course in a single cell every position has either methylation $0$ or $1$:
-intermediate values in the measurements are given by the superposition of 
-many cells).
 
 Now, to show how \gimli can help in the search for unusual regions which
 can inspire further investigation, I chose to look at sequences of blocks 
 which correspond to dips in the signal, regions where the methylation
 ratio goes from high to low and to high again.
+
+
 
 \section{implementation}
 

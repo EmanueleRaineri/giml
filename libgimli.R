@@ -151,7 +151,7 @@ libgimli$intersect.with.bed<-function( bed.rd , meth.rd ){
 	keys<-unique(ov.bed.meth.mat[,1])
 	for ( i in 1:nrow(bed.rd)){
 		if (i %in% keys){
-			print(i)
+			#print(i)
 			slice<-meth.rd[ov.bed.meth.mat[ov.bed.meth.mat[,1]==i,2],]
 			res[i,1] <- bed[i,2]
 			res[i,2] <- bed[i,3]
@@ -169,6 +169,7 @@ libgimli$intersect.with.bed<-function( bed.rd , meth.rd ){
 			res[i,6]<- NA
 		}
 	}
+	names(res)<-c("start","end","ncpg","min","median","max")
 	res
 }
 #

@@ -23,6 +23,8 @@ bed.rd     <- libgimli$rd.of.bed(bed)
 
 res<-libgimli$intersect.with.bed(bed.rd, meth.rd)
 
+write.table(res,file=args[3],
+row.names=F,col.names=F,quote=F,sep="\t")
 #plot(start(meth.slice$ranges),meth.slice$nc/(meth.slice$nc+meth.slice$c),
 #	col="red",type='b',ylim=c(0,1))
 #abline(v=c(64431711,64432082),col="blue")	
