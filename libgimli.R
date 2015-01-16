@@ -47,8 +47,10 @@ libgimli$plot.dmr<-function( dmr ,  lb , ub, color1 , color2 ){
 libgimli$plot.intersected.dmr<-function( dmr ,  lb , ub, color1, color2 ){	
 	plot( 1 , type="n", xlab="", ylab="", 
 	xlim=c(lb, ub), 
-	ylim=c(-0.1, 1.1)
+	ylim=c(-0.1, 1.1),
+	bty="n"
 	)
+	grid()
 	for (i in 1:nrow(dmr)){
 		if ( dmr[i,"start1"] > ub || dmr[i,"end1"] < lb ) next
 		a<-	dmr[i,"start1"]
@@ -59,8 +61,10 @@ libgimli$plot.intersected.dmr<-function( dmr ,  lb , ub, color1, color2 ){
 		xr<-min(b,d)
 		y1<-dmr[i,"mle1"]
 		y2<-dmr[i,"mle2"]
-		lines(c(xl,xr), c(y1,y1), col=color1, lwd=2)
-		lines(c(xl,xr), c(y2,y2), col=color2, lwd=2)
+		lines(c(xl,xr), c(y1,y1), col=color1, lwd=3)
+		lines(c(xl,xr), c(y2,y2), col=color2, lwd=3)
+		lines(c(xl,xl) , c(0,max(y1,y2)), col="lightgreen", lty="dotted",lwd=1)
+		lines(c(xr,xr) , c(0,max(y1,y2)), col="lightgreen", lty="dotted",lwd=1)
 	}
 }
 #

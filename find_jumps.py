@@ -17,5 +17,3 @@ for i in range(len(all)-2):
 	if (max2<min1 and max2<min3):
 		print >>sys.stderr,"***\n", all[i],"\n",all[i+1],"\n",all[i+2]
 		print >>sys.stdout,all[i+1]
-
-

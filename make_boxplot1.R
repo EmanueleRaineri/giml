@@ -1,6 +1,6 @@
 source("libgimli.R")
-
-datadir<-"/Users/emanueleraineri/Desktop/meth_data"
+args <- commandArgs(trailingOnly = TRUE)
+datadir<-args[1]
 fgimli<-paste(datadir,"/C004GD51_cpg.chr1.gimli.gz",sep="")
 
 if (!exists("gimli")){

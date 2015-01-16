@@ -1,4 +1,6 @@
-ifile = open("C004GD51_cpg.chr1.gimli.tss.bed")
+import sys
+datadir=sys.argv[1]
+ifile = open(datadir+"/C004GD51_cpg.chr1.gimli.tss.bed")
 
 table={}
 # values = [ width, ncpg, dm ]
