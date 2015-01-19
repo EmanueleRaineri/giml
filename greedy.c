@@ -509,10 +509,11 @@ int main(int argc, char* argv[]){
 	table* data;
 	
 	int ilambda,status ;
-	float lambda[13] = {0.1,0.2,0.5,
+	float lambda[15] = {0.1,0.2,0.5,
 	1,2,5,
 	10,20,50,
-	100,200,500,1000};
+	100,200,500,
+	1000,2000,5000};
 	node* el, *head;
 	heap* h;	
 	node* maxn;
@@ -527,7 +528,6 @@ int main(int argc, char* argv[]){
 	}
 	
 read:
-	
 	data=malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
@@ -539,12 +539,9 @@ read:
 	
 	head = malloc(sizeof(node));
 	head->prev = NULL;
-	
 
 	nlines = list_of_file( in, buffer,  head  , data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
-
-	
 
 	data->theta      =  realloc(data->theta,nlines*sizeof(float));
 	data->loglik     =  realloc(data->loglik,nlines*sizeof(float));
@@ -585,6 +582,7 @@ read:
 		maxn = heap_extract_max(h);
 		assert (heap_wrong_index(h)==0);
 		if (maxn->prev==NULL && maxn->next==NULL) break;
+		/** XXX here insert the adjusted delta likelihood **/
 		if ( (maxn->delta + lambda[ilambda]) >0 ){
 			/***** merge ****/
 			fprintf( stderr , "merging %d @ lambda=%.4f maxn->delta=%.4f\n", 
@@ -595,7 +593,7 @@ read:
 			}
 			mergec++;
 			tmpnext=maxn->next;
-			assert(tmpnext!=NULL);
+			assert(tmpnext != NULL);
 			for( i= tmpnext->from ; i <= tmpnext->to ; i++ ){
 					data->segment_id[i] = maxn->segment_id;
 			}	
@@ -639,15 +637,15 @@ read:
 	
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
 	
-	free_list(head);
-	free(data->chrom);      
-	free(data->theta);      
-	free(data->loglik);     
-	free(data->pos);       
-	free(data->nc);       
-	free(data->c);
-	free(data->segment_id);
-	free(data);
+	free_list( head );
+	free( data->chrom );      
+	free( data->theta );      
+	free( data->loglik );     
+	free( data->pos );       
+	free( data->nc );       
+	free( data->c );
+	free( data->segment_id );
+	free( data );
 	
 	free(h->heap);
 	h->heap=NULL;
