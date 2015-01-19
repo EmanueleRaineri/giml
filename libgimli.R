@@ -1,6 +1,6 @@
 library(IRanges)
 libgimli = new.env()
-#
+#math
 libgimli$loglik<-function(nonconv , conv){
 	nc<-sum(nonconv)
 	co<sum(conv)
@@ -8,7 +8,11 @@ libgimli$loglik<-function(nonconv , conv){
 	dbinom(x=nc,size=nc+co,p=theta,log=T)+
 	nc*theta+co*(1-theta)
 }
-#
+
+libgimli$totloglik<-function(nonconv,conv,ls){
+	#ls is list of segments
+}
+#I/O
 libgimli$load.segments<-function(fname){
 	#returns a data frame
 	seg<-read.table(fname,stringsAsFactors=F)
@@ -16,7 +20,7 @@ libgimli$load.segments<-function(fname){
 		"delta","lambda")
 	return(seg)
 }
-#
+#plotting
 libgimli$plot.segments<-function( seg ,  lb , ub, col ){
 	plot(1, type="n", xlab="", ylab="", 
 	xlim=c(lb, ub), 
@@ -27,7 +31,7 @@ libgimli$plot.segments<-function( seg ,  lb , ub, col ){
 		lines(c(seg[i,2],seg[i,3]),c(seg[i,"mle"],seg[i,"mle"]),col=col,lwd=2)
 	}
 }
-#
+
 libgimli$plot.dmr<-function( dmr ,  lb , ub, color1 , color2 ){	
 	plot( 1 , type="n", xlab="", ylab="", 
 	xlim=c(lb, ub), 

@@ -33,8 +33,6 @@ test: out.gimli.2.ref out.gimli.2
 correla: correla.c
 	gcc -o correla correla.c -lm
 
-G199.G202.20.200.dmr.eps : G199.G202.20.200.dmr example2.R
-	Rscript example2.R
 
 G199.chr1.correla.txt:
 	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$2,$$4}' | ./correla 1 2>/dev/null > G199.chr1.correla.txt
@@ -72,36 +70,10 @@ gimli1000: $(GIMLI1000)
 boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
 	Rscript make_boxplot1.R $(DATA)
 
-boxplot_example_3.eps : rpkm.vs.met
-	Rscript boxplot_example_3.R	
+#example2
+G199.G202.20.200.dmr.eps : G199.G202.20.200.dmr example2.R
+	Rscript example2.R
 
-figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
-
-gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
-	latex gimli_paper.tex
-	bibtex gimli_paper
-	latex gimli_paper.tex
-	latex gimli_paper.tex
-
-gimli_paper.pdf: gimli_paper.dvi
-	dvipdf $^
-
-clean:
-	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2 correla
-	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
-
-
-gencode.chr1.genes.unique.tss :  gencode.v19.TSS.notlow.chr1.gff
-	cat $^ | awk '{print $$10}' | sort | uniq -c | awk '{if ($$1==1) print $$2}' > $@
-
-uniq.tss.coords: filter_gff.py gencode.chr1.genes.unique.tss gencode.v19.TSS.notlow.chr1.gff
-	python filter_gff.py > uniq.tss.coords
-
-uniq.tss.extended.100.coords : uniq.tss.coords
-	awk 'BEGIN{OFS="\t"}{print $$1,$$2-100,$$3+100,$$4}' uniq.tss.coords > uniq.tss.extended.100.coords
-
-S000RD13.gene.body.txt : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
-	cat $^ | awk 'BEGIN{FS="\t"}{print $$1,$$4,$$5,$$7}' | awk '$$1=="chr1"'  > $@ 
 
 ###example 3###
 
@@ -119,3 +91,25 @@ C004GD51_cpg.chr1.gimli.tss.filtered.bed : filter.tss.gimli.py $(DATA)/C004GD51_
 
 rpkm.vs.met : join.tss.rpkm.py C004GD51_cpg.chr1.gimli.tss.filtered.bed C004GD12.rpkm
 	python join.tss.rpkm.py > $@ 
+
+boxplot_example_3.eps : rpkm.vs.met
+	Rscript boxplot_example_3.R	
+
+############################
+
+figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+
+gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
+	latex gimli_paper.tex
+	bibtex gimli_paper
+	latex gimli_paper.tex
+	latex gimli_paper.tex
+
+gimli_paper.pdf: gimli_paper.dvi
+	dvipdf $^
+
+
+clean:
+	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2 correla
+	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+
