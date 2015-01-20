@@ -13,6 +13,7 @@
 #define MAXLINES 2000000
 #define FILE_END 0
 #define CHANGE_CHROM 1
+#define NLAMBDA 15
 //
 typedef struct table{
 	char* chrom;
@@ -49,7 +50,7 @@ typedef struct heap{
 
 
 float dist_penalty(int d){
-	return (exp(-(float)d/D0));
+	return (exp(-d/D0));
 }
 
 float dbinom(int x, int size, float p){
@@ -489,7 +490,8 @@ int main(int argc, char* argv[]){
 	int nlines,le;
 	char* buffer=malloc(LINE*sizeof(char));
 	FILE *in;
-	
+	int cutoff=1;
+
 	switch(argc){
 		case 1:
 			in = stdin;
@@ -501,6 +503,20 @@ int main(int argc, char* argv[]){
 				exit(1);
 			}
 			break;
+		case 3:
+			in = fopen(argv[1],"r");
+			if (in==NULL){
+				fprintf(stderr,"can't open %s\n",argv[1]);
+				exit(1);
+			}
+			break;
+			/** for debugging purposes I can turn off the distance penalty **/
+			if (strcmp(argv[2],"-c")==0){
+				cutoff=0;
+			} else {
+				fprintf(stderr,"can't parse %s\n",argv[2]);
+				exit(1);
+			}
 		default:
 			fprintf(stderr,"usage: gimli [filename]\n");
 			exit(1);
@@ -509,7 +525,7 @@ int main(int argc, char* argv[]){
 	table* data;
 	
 	int ilambda,status ;
-	float lambda[15] = {0.1,0.2,0.5,
+	float lambda[NLAMBDA] = {0.1,0.2,0.5,
 	1,2,5,
 	10,20,50,
 	100,200,500,
@@ -573,18 +589,35 @@ read:
 	fprintf(stderr,"done\n");
 	le=print_list(stderr,head,data->pos,0);	
 	int loopc=0;
-	float totloglik=0;
+	float deltalik,totloglik=0;
+	int d;
 	if (DEBUG) print_heap(h);
 	ilambda=0;
 	mergec=0;	
+	if (cutoff) {
+		fprintf(stderr,"with distance penalty\n");
+	}
 	while(1){
 		if (DEBUG) print_heap(h);
 		maxn = heap_extract_max(h);
 		assert (heap_wrong_index(h)==0);
 		if (maxn->prev==NULL && maxn->next==NULL) break;
-		/** XXX here insert the adjusted delta likelihood **/
-		if ( (maxn->delta + lambda[ilambda]) >0 ){
-			/***** merge ****/
+		if (cutoff) {
+			d = data->pos[maxn->next->from] - data->pos[maxn->to];
+			if (d<=0) {
+				fprintf(stderr,"distance<=0:%d (%d) (%d)\n",d,
+					data->pos[maxn->next->from],
+					data->pos[maxn->to]);
+				exit(1);
+			}
+			fprintf(stdout,"d:%d distance penalty=%f\n",d,dist_penalty(d));
+			deltalik=maxn->delta + lambda[ilambda]*dist_penalty(d);
+		} else {
+			fprintf(stderr,"no distance penalty\n");
+			deltalik=maxn->delta + lambda[ilambda];
+		}
+		if ( deltalik >=0 ){
+			/* merge maxn with the following node */
 			fprintf( stderr , "merging %d @ lambda=%.4f maxn->delta=%.4f\n", 
 				maxn->segment_id,lambda[ilambda],maxn->delta );
 			if (DEBUG) {
@@ -628,7 +661,7 @@ read:
 			assert ( heap_wrong_index(h)==0 );
 			le = print_segmentation(stdout, head , lambda[ilambda] , data, &totloglik );
 			fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
-			if (ilambda<12)
+			if (ilambda<(NLAMBDA-1))
 				ilambda++;
 			else break;
 		}	
