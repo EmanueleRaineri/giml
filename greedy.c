@@ -8,7 +8,7 @@
 #include <assert.h>
 //
 #define DEBUG 0
-#define D0 1000.0
+#define D0 2000.0
 #define LINE 1000
 #define MAXLINES 2000000
 #define FILE_END 0
@@ -50,7 +50,12 @@ typedef struct heap{
 
 
 float dist_penalty(int d){
-	return (exp(-d/D0));
+	float dpen;
+	dpen=(exp(d/D0));
+	if (dpen>FLT_MAX){
+		dpen=FLT_MAX-1;
+	}
+	return dpen;
 }
 
 float dbinom(int x, int size, float p){
@@ -96,7 +101,7 @@ int print_list(FILE* stream, node* head, int* pos, float lambda){
 	//	fprintf(stream,"%.4f\t",el->loglik);
 	//	fprintf(stream,"%.4f\t",el->delta);
 	//	fprintf(stream,"%.4f\n",lambda);
-		print_node(el,pos);
+   		print_node(el,pos);
 		le++;
 		el = el->next;
 	}
@@ -154,6 +159,8 @@ void delta_lik( node* el, table* data ){
 	float mletheta;
 	int* nc=data->nc;
 	int* c = data->c;
+	int d;
+	float dpen;
 	if (el->next == NULL) {
 		fprintf(stderr,"el->next==NULL in delta_lik (el->delta=%.4f)\n",el->delta);
 		el->delta=-FLT_MAX;
@@ -180,11 +187,24 @@ void delta_lik( node* el, table* data ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],mletheta);
 	}
 	el->delta = el->delta - el->loglik - el->next->loglik;
+	// here distance penalty 
+	d = data->pos[el->next->from] - data->pos[el->to];
+	if (d<=0){
+		fprintf(stderr,"d<=0 : %d (%d -> %d ) \n",d,data->pos[el->next->from],
+		data->pos[el->to]);
+		exit(1);
+	}
+	dpen = dist_penalty(d);
+	if (dpen<1){
+		fprintf(stderr,"dpen<1 : %f\n",dpen);
+		exit(1);
+	}
+	if (dpen>FLT_MAX){
+		fprintf(stderr,"dpen>FLT_MAX : %f with d:%d\n",dpen,d);
+		exit(1);
+	}
+	el->delta = (el->delta)*dpen;
 }
-
-void delta_sdev(node* el, table* data){
-}
-
 
 void fill_node(node* el, table* data, int i){
 		el->from = i;
@@ -350,6 +370,7 @@ void heap_increase_key(heap* h , unsigned int i , float key ){
 	// in practice use this only for de novo insertion
 	if (  key < h->heap[i]->delta ){
 		fprintf(stderr,"new key smaller than current key\n");
+		fprintf(stderr,"new key:%f current key:%f\n",key,h->heap[i]->delta);
 		exit(1);
 	}
 	if (i<0 || i>=h->size){
@@ -408,7 +429,7 @@ void heap_delete (heap* h, unsigned int i){
 	heap_increase_key(h,i,FLT_MAX);
 	del=heap_extract_max(h);
 	if (del==NULL) {
-		fprintf(stderr,"heap_delete:invalied del\n");
+		fprintf(stderr,"heap_delete:invalid del\n");
 		exit(1);
 	}
 }
@@ -503,20 +524,6 @@ int main(int argc, char* argv[]){
 				exit(1);
 			}
 			break;
-		case 3:
-			in = fopen(argv[1],"r");
-			if (in==NULL){
-				fprintf(stderr,"can't open %s\n",argv[1]);
-				exit(1);
-			}
-			break;
-			/** for debugging purposes I can turn off the distance penalty **/
-			if (strcmp(argv[2],"-c")==0){
-				cutoff=0;
-			} else {
-				fprintf(stderr,"can't parse %s\n",argv[2]);
-				exit(1);
-			}
 		default:
 			fprintf(stderr,"usage: gimli [filename]\n");
 			exit(1);
@@ -590,36 +597,25 @@ read:
 	le=print_list(stderr,head,data->pos,0);	
 	int loopc=0;
 	float deltalik,totloglik=0;
-	int d;
 	if (DEBUG) print_heap(h);
 	ilambda=0;
 	mergec=0;	
 	if (cutoff) {
 		fprintf(stderr,"with distance penalty\n");
+	}else{
+		fprintf(stderr,"no distance penalty\n");
 	}
 	while(1){
 		if (DEBUG) print_heap(h);
 		maxn = heap_extract_max(h);
 		assert (heap_wrong_index(h)==0);
 		if (maxn->prev==NULL && maxn->next==NULL) break;
-		if (cutoff) {
-			d = data->pos[maxn->next->from] - data->pos[maxn->to];
-			if (d<=0) {
-				fprintf(stderr,"distance<=0:%d (%d) (%d)\n",d,
-					data->pos[maxn->next->from],
-					data->pos[maxn->to]);
-				exit(1);
-			}
-			fprintf(stdout,"d:%d distance penalty=%f\n",d,dist_penalty(d));
-			deltalik=maxn->delta + lambda[ilambda]*dist_penalty(d);
-		} else {
-			fprintf(stderr,"no distance penalty\n");
-			deltalik=maxn->delta + lambda[ilambda];
-		}
+		deltalik=maxn->delta + lambda[ilambda];
 		if ( deltalik >=0 ){
 			/* merge maxn with the following node */
-			fprintf( stderr , "merging %d @ lambda=%.4f maxn->delta=%.4f\n", 
-				maxn->segment_id,lambda[ilambda],maxn->delta );
+			fprintf( stderr , "merging %d ( %d -> %d )@ lambda=%.4f maxn->delta=%.4f deltalik=%.4f\n", 
+				maxn->segment_id,data->pos[maxn->from],
+				data->pos[maxn->next->to],lambda[ilambda],maxn->delta, deltalik );
 			if (DEBUG) {
 				fprintf(stderr,"maxn before merging\n");
 				print_node( maxn , data->pos );
@@ -656,6 +652,9 @@ read:
 				if (DEBUG) print_segmentation(stderr,head,lambda[ilambda],data,&totloglik);
 				assert ( heap_wrong_index(h)==0 );
 		} else { // no possible mergings
+			fprintf( stderr , "not merging %d ( %d -> %d )@ lambda=%.4f maxn->delta=%.4f deltalik=%.4f\n", 
+				maxn->segment_id,data->pos[maxn->from],
+				data->pos[maxn->next->to],lambda[ilambda],maxn->delta, deltalik );
 			assert ( heap_wrong_index(h)==0 );
 			heap_insert( h , maxn );
 			assert ( heap_wrong_index(h)==0 );
