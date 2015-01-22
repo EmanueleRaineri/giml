@@ -4,17 +4,18 @@
 #include <math.h>
 #include <errno.h>
 #include <string.h>
-#define NDEBUG 1
+#define NDEBUG 1 //this must appear before the inclusion of assert.h
 #include <assert.h>
 //
 #define DEBUG 0
-#define D0 2000.0
+#define D1 100.0
+#define D0 10000.0
 #define LINE 1000
 #define MAXLINES 2000000
 #define FILE_END 0
 #define CHANGE_CHROM 1
 #define NLAMBDA 15
-//
+
 typedef struct table{
 	char* chrom;
 	float*  theta;
@@ -26,9 +27,10 @@ typedef struct table{
 }table;
 
 typedef struct node{
-	// from, to refer to indexes for the four arrays mentioned above, 
-	// not to real positions along 
-	// the chromosome
+	/*	from, to refer to indexes for the four arrays mentioned above, 
+		not to real positions along 
+		the chromosome 
+	*/
 	int from;
 	int to;
 	float loglik;
@@ -51,10 +53,7 @@ typedef struct heap{
 
 float dist_penalty(int d){
 	float dpen;
-	dpen=(exp(d/D0));
-	if (dpen>FLT_MAX){
-		dpen=FLT_MAX-1;
-	}
+	dpen=D1/(1+exp(-d/D0))-D1/2+1;
 	return dpen;
 }
 
