@@ -54,6 +54,7 @@ typedef struct heap{
 float dist_penalty(int d){
 	float dpen;
 	dpen=D1/(1+exp(-d/D0))-D1/2+1;
+	//dpen = 1.0;
 	return dpen;
 }
 
