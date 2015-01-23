@@ -52,17 +52,38 @@ out.correla.eps: G199.chr1.correla.txt G200.chr1.correla.txt G201.chr1.correla.t
 $(C004GDH1GIMLI): $(DATA)/C004GD51_cpg.chr1.txt.gz
 	zcat $^ | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $@	
 
-$(GIMLI1000) : $(METH) 
-	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
-	zcat $(DATA)/G200_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G200_cpg.chr1.gimli.gz
-	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G201_cpg.chr1.gimli.gz
-	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G202_cpg.chr1.gimli.gz
-	zcat ~/Desktop/meth_data/G199_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G199_cpg.chr1.gimli.1000
-	zcat ~/Desktop/meth_data/G200_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G200_cpg.chr1.gimli.1000
-	zcat ~/Desktop/meth_data/G201_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G201_cpg.chr1.gimli.1000
-	zcat ~/Desktop/meth_data/G202_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G202_cpg.chr1.gimli.1000
 
-G199.G200.G201.G202.chr1.gimli.eps: $(GIMLI1000)
+$(DATA)/G199_cpg.chr1.gimli.gz: $(DATA)/G199_cpg.chr1.txt.gz
+	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
+	
+$(DATA)/G202_cpg.chr1.gimli.gz: $(DATA)/G202_cpg.chr1.txt.gz
+	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G202_cpg.chr1.gimli.gz
+
+$(DATA)/G200_cpg.chr1.gimli.gz : $(DATA)/G200_cpg.chr1.txt.gz
+	zcat $(DATA)/G200_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G200_cpg.chr1.gimli.gz
+
+$(DATA)/G201_cpg.chr1.gimli.gz : $(DATA)/G201_cpg.chr1.txt.gz	
+	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G201_cpg.chr1.gimli.gz
+
+$(GIMLI1000) : $(DATA)/G199_cpg.chr1.gimli.gz $(DATA)/G200_cpg.chr1.gimli.gz $(DATA)/G201_cpg.chr1.gimli.gz $(DATA)/G202_cpg.chr1.gimli.gz
+	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G199_cpg.chr1.gimli.1000
+	zcat $(DATA)/G200_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G200_cpg.chr1.gimli.1000
+	zcat $(DATA)/G201_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G201_cpg.chr1.gimli.1000
+	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G202_cpg.chr1.gimli.1000
+
+$(DATA)/G199_cpg.chr1.gimli.100: $(DATA)/G199_cpg.chr1.gimli.gz
+	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G199_cpg.chr1.gimli.100
+
+$(DATA)/G202_cpg.chr1.gimli.100: $(DATA)/G202_cpg.chr1.gimli.gz
+	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G202_cpg.chr1.gimli.100
+
+$(DATA)/G199_cpg.chr1.gimli.100.filtered: $(DATA)/G199_cpg.chr1.gimli.100
+	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
+
+$(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
+	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
+
+G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
 	Rscript figure2.R $(DATA)	
 
 gimli1000: $(GIMLI1000)
@@ -71,6 +92,15 @@ boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
 	Rscript make_boxplot1.R $(DATA)
 
 #example2
+
+G199.G202.100.200.dmr : $(DATA)/G199_cpg.chr1.gimli.100  $(DATA)/G202_cpg.chr1.gimli.100
+	bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.100 -b $(DATA)/G202_cpg.chr1.gimli.100 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
+
+
+G199.G202.100.200.dmr.eps : G199.G202.20.200.dmr example2.R
+	Rscript example2.R
+
+
 G199.G202.20.200.dmr.eps : G199.G202.20.200.dmr example2.R
 	Rscript example2.R
 
@@ -97,7 +127,7 @@ boxplot_example_3.eps : rpkm.vs.met
 
 ############################
 
-figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.20.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
 
 gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 	latex gimli_paper.tex
@@ -109,7 +139,12 @@ gimli_paper.pdf: gimli_paper.dvi
 	dvipdf $^
 
 
+.PHONY : clean 
+
 clean:
 	rm -f gimli gimli_profile gimli_static gimli_optimized out.gimli.2 correla
 	rm -f gimli_paper.dvi gimli_paper.pdf out.correla.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+	rm -f G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr
+	rm -f $(DATA)/G199_cpg.chr1.gimli.100 $(DATA)/G202_cpg.chr1.gimli.100
+	rm -f $(DATA)/G199_cpg.chr1.gimli.gz $(DATA)/G202_cpg.chr1.gimli.gz 
 

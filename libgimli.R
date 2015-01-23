@@ -20,6 +20,30 @@ libgimli$load.segments<-function(fname){
 		"delta","lambda")
 	return(seg)
 }
+
+libgimli$load.meth<-function(fname){
+	meth<-read.table(fname,stringsAsFactors=F)
+	names(meth)<-c("chrom","pos",
+	"phred","meth","var","nc","c",
+	"cov1","cov2"
+	)
+	return(meth)
+}
+
+libgimli$load.dmr<-function(fname){
+	dmr<-read.table(fname,stringsAsFactors=F)
+	names(dmr)<-c("chrom1",
+	"start1","end1","ncpgs1",
+	"min1","mle1","max1",
+	"lik1","delta.lik1","lambda1",
+	"chrom2","start2","end2","ncpgs2",
+	"min2","mle2","max2",
+	"lik2","delta.lik2","lambda2",
+	"olap"
+	)
+	return(dmr)
+}
+
 #plotting
 libgimli$plot.segments<-function( seg ,  lb , ub, col ){
 	plot(1, type="n", xlab="", ylab="", 
@@ -95,25 +119,7 @@ libgimli$theta.segment<-function(nc,c){
 	return(theta)	
 }
 #
-libgimli$load.meth<-function(fname){
-	meth<-read.table(fname,stringsAsFactors=F)
-	names(meth)<-c("chrom","pos",
-	"phred","meth","var","nc","c",
-	"cov1","cov2"
-	)
-	return(meth)
-}
 #
-libgimli$load.dmr<-function(fname){
-	dmr<-read.table(fname,stringsAsFactors=F)
-	names(dmr)<-c("chrom",
-	"start1","end1","ncpgs1",
-	"min1","mle1","max1",
-	"start2","end2","ncpgs2",
-	"min2","mle2","max2"
-	)
-	return(dmr)
-}
 #
 libgimli$lik.segment<-function(nc,c){
 	theta<-	theta.segment(nc,c);
