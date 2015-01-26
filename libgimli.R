@@ -91,8 +91,8 @@ libgimli$plot.intersected.dmr<-function( dmr ,  lb , ub, color1, color2 ){
 		y2<-dmr[i,"mle2"]
 		lines(c(xl,xr), c(y1,y1), col=color1, lwd=3)
 		lines(c(xl,xr), c(y2,y2), col=color2, lwd=3)
-		lines(c(xl,xl) , c(0,max(y1,y2)), col="lightgreen", lty="dotted",lwd=1)
-		lines(c(xr,xr) , c(0,max(y1,y2)), col="lightgreen", lty="dotted",lwd=1)
+		lines(c(xl,xl) , c(0,max(y1,y2)), col="green", lty="solid",lwd=2)
+		lines(c(xr,xr) , c(0,max(y1,y2)), col="green", lty="solid",lwd=2)
 	}
 }
 #

@@ -77,6 +77,15 @@ $(DATA)/G199_cpg.chr1.gimli.100: $(DATA)/G199_cpg.chr1.gimli.gz
 $(DATA)/G202_cpg.chr1.gimli.100: $(DATA)/G202_cpg.chr1.gimli.gz
 	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G202_cpg.chr1.gimli.100
 
+$(DATA)/G199_cpg.chr1.gimli.10: $(DATA)/G199_cpg.chr1.gimli.gz
+	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G199_cpg.chr1.gimli.10
+
+$(DATA)/G202_cpg.chr1.gimli.10: $(DATA)/G202_cpg.chr1.gimli.gz
+	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G202_cpg.chr1.gimli.10
+
+
+
+
 $(DATA)/G199_cpg.chr1.gimli.100.filtered: $(DATA)/G199_cpg.chr1.gimli.100
 	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
 
@@ -97,12 +106,17 @@ G199.G202.100.200.dmr : $(DATA)/G199_cpg.chr1.gimli.100  $(DATA)/G202_cpg.chr1.g
 	bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.100 -b $(DATA)/G202_cpg.chr1.gimli.100 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
 
 
-G199.G202.100.200.dmr.eps : G199.G202.20.200.dmr example2.R
-	Rscript example2.R
+G199.G202.10.200.dmr : $(DATA)/G199_cpg.chr1.gimli.10  $(DATA)/G202_cpg.chr1.gimli.10
+	bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.10 -b $(DATA)/G202_cpg.chr1.gimli.10 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
 
 
-G199.G202.20.200.dmr.eps : G199.G202.20.200.dmr example2.R
-	Rscript example2.R
+
+G199.G202.100.200.dmr.eps : G199.G202.100.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.100.200.dmr
+
+
+G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.10.200.dmr
 
 
 ###example 3###

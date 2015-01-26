@@ -1,4 +1,4 @@
-\documentclass[11pt]{amsart}
+\documentclass[12pt]{amsart}
 \usepackage{graphicx}
 \newcommand{\lik}{\ensuremath{\mathcal{L}}}
 \newcommand{\gimli}{\texttt{gimli}}
@@ -272,7 +272,7 @@ an apparent loss of methylation across the $2$ samples, which are different
 stages in the hematopoietic process).
 
 \begin{figure}\label{ex1}
-\includegraphics[width=7cm,angle=270]{G199.G200.G201.G202.chr1.gimli.eps}
+\includegraphics[width=10cm,angle=270]{G199.G200.G201.G202.chr1.gimli.eps}
 \caption{output of \gimli, for $\lambda=1000$ for two Blueprint samples. The loss of
 methylation is clearly visible.}
 \end{figure}
@@ -298,8 +298,9 @@ tests suited to the specific signal (and the specific scale)
 they are considering.
 
 \begin{figure}\label{ex1}
-\includegraphics[width=7cm,angle=270]{G199.G202.100.200.dmr.eps}
-\caption{Differentially methylated regions : I considered segments longer than $200$bp 
+\includegraphics[width=10cm,angle=270]{G199.G202.100.200.dmr.eps}
+\caption{Differentially methylated regions : I considered segments 
+(found setting $\lambda=100$) longer than $200$bp 
 corresponding to
 non overlapping intervals of methylation values (ie the maximum value of one 
 segment is less than the minimum of the other).}
@@ -360,3 +361,7 @@ analyses based on \gimli's output.
 \bibliography{gimli_paper}
 \bibliographystyle{plain}
 \end{document}
+
+
+%rich structure of segments with constant or almost constant
+%methylation
