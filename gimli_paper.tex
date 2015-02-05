@@ -83,7 +83,7 @@ using the pairs contained in it.}
 Another interesting aspect of methylation is that it possesses some sort of scale 
 invariance: variations can be observed both at the level of a single promoter
 region (hundred of bases, see for example XXX) and when looking at stretches
-of millions of bases (cite XXX).
+of millions of bases (\cite{largeblocks} ).
 This entails some problems when analyzing this kind of data: a rough
 running average with a window of many megabases might destroy interesting
 local detail, but at the same time large scale (slow) changes are also
@@ -143,7 +143,7 @@ The likelihood of a block is defined as follows: if the
 segment coincides with a single locus, one has
 
 \begin{equation}
-\lik_i=\log {\overline{n}_i+n \choose \overline{n}_i} +
+\lik_i=\log {\overline{n}_i+n_i \choose \overline{n}_i} +
 	{\overline{n}_i}\log\hat{\theta}_i+
 	n_i\log(1-\hat{\theta}_i)
 \end{equation}

@@ -1,4 +1,4 @@
-PLACE=work
+PLACE=mac
 
 ifeq ($(PLACE),work)
 BED=/usr/bin
@@ -32,7 +32,6 @@ test: out.gimli.2.ref out.gimli.2
 
 correla: correla.c
 	gcc -o correla correla.c -lm
-
 
 G199.chr1.correla.txt:
 	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$2,$$4}' | ./correla 1 2>/dev/null > G199.chr1.correla.txt
@@ -83,9 +82,6 @@ $(DATA)/G199_cpg.chr1.gimli.10: $(DATA)/G199_cpg.chr1.gimli.gz
 $(DATA)/G202_cpg.chr1.gimli.10: $(DATA)/G202_cpg.chr1.gimli.gz
 	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G202_cpg.chr1.gimli.10
 
-
-
-
 $(DATA)/G199_cpg.chr1.gimli.100.filtered: $(DATA)/G199_cpg.chr1.gimli.100
 	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
 
@@ -102,21 +98,26 @@ boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
 
 #example2
 
-G199.G202.100.200.dmr : $(DATA)/G199_cpg.chr1.gimli.100  $(DATA)/G202_cpg.chr1.gimli.100
-	bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.100 -b $(DATA)/G202_cpg.chr1.gimli.100 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
-
-
 G199.G202.10.200.dmr : $(DATA)/G199_cpg.chr1.gimli.10  $(DATA)/G202_cpg.chr1.gimli.10
-	bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.10 -b $(DATA)/G202_cpg.chr1.gimli.10 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
+	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.10 -b $(DATA)/G202_cpg.chr1.gimli.10 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
 
 
+G199.G202.100.200.dmr : $(DATA)/G199_cpg.chr1.gimli.100  $(DATA)/G202_cpg.chr1.gimli.100
+	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.100 -b $(DATA)/G202_cpg.chr1.gimli.100 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
+
+G199.G202.1000.200.dmr : $(DATA)/G199_cpg.chr1.gimli.1000  $(DATA)/G202_cpg.chr1.gimli.1000
+	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.1000 -b $(DATA)/G202_cpg.chr1.gimli.1000 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
+
+#
+
+G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.10.200.dmr
 
 G199.G202.100.200.dmr.eps : G199.G202.100.200.dmr example2.R
 	Rscript example2.R $(DATA) G199.G202.100.200.dmr
 
-
-G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.10.200.dmr
+G199.G202.1000.200.dmr.eps : G199.G202.1000.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.1000.200.dmr
 
 
 ###example 3###
@@ -152,6 +153,7 @@ gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 gimli_paper.pdf: gimli_paper.dvi
 	dvipdf $^
 
+##################
 
 .PHONY : clean 
 
@@ -161,4 +163,3 @@ clean:
 	rm -f G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr
 	rm -f $(DATA)/G199_cpg.chr1.gimli.100 $(DATA)/G202_cpg.chr1.gimli.100
 	rm -f $(DATA)/G199_cpg.chr1.gimli.gz $(DATA)/G202_cpg.chr1.gimli.gz 
-
