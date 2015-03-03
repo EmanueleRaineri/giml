@@ -1,4 +1,5 @@
 library(IRanges)
+library(GenomicRanges)
 library(plyr)
 
 libgimli = new.env()
@@ -28,41 +29,133 @@ libgimli$cpg.density<-function(meth, lb=meth[1,2] , ub=meth[nrow(meth),2] ){
 	tmp<-meth[meth$pos>=lb && meth$pos<=ub,]
 	return(nrow(tmp)/(tmp[nrow(tmp),2]-tmp[1,2]))
 }
+
+libgimli$beta.diff<-function(a1,b1,a2,b2){
+	integrate(function(x) dbeta(x,a1,b1)*pbeta(x,a2,b2),0,1)[[1]]
+}
+
+libgimli$methyl.diff<-function(nc1,c1,nc2,c2){
+	libgimli$beta.diff (nc1+1 , c1+1 , nc2+1 , c2+1 )
+}
+
+libgimli$p.equal.theta<-function( n1, k1, n2, k2 ){
+	choose( n1 , k1 )*choose( n2 , k2 )*beta( k1+k2+1 , n1-k1+n2-k2+1 )
+}
+
+libgimli$p.equal.theta.sim<-function( n1, k1, n2, k2, size ){
+	theta  <- runif(size)
+	b1     <- mapply( function( t ){ rbinom( 1, n1, t ) } , theta )
+	b2     <- mapply( function( t ){ rbinom( 1, n2, t ) } , theta )
+	sum( b1==k1 & b2==k2 )/size
+}
+
+libgimli$pval.diff.sim<-function( nc1, c1, nc2, c2, size ){
+	theta <- runif(size)
+	d1 <- nc1+c1
+	d2 <- nc2+c2
+	b1 <- mapply( function( t ){ rbinom( 1, d1, t ) }, theta )
+	b2 <- mapply( function( t ){ rbinom( 1, d2, t ) }, theta )
+	sum( b1>=nc1 & b2<=nc2 )/size
+}
+
+libgimli$pval.diff<-function( nc1, c1, nc2, c2){
+	d1<-nc1+c1
+	d2<-nc2+c2
+	pval<-0
+	for ( i in nc1:d1 ){
+		for ( j in 0:nc2 ){
+			pval <- pval + libgimli$p.equal.theta(d1,i,d2,j)
+		}
+	}
+	pval
+}
+
+libgimli$sim.counts<-function(d1,d2,size){
+	theta <- runif( size )
+	nc1   <- mapply( function( t ){ rbinom( 1, d1, t ) }, theta )
+	c1    <- ( d1 - nc1 )
+	nc2   <- mapply( function( t ){ rbinom( 1, d2, t ) }, theta )
+	c2    <- ( d2 - nc2 )
+	d<-data.frame(nc1=nc1,c1=c1,nc2=nc2,c2=c2)
+}
+
+libgimli$distrib.pval.diff<-function(d1,d2,size){
+	d<-libgimil$sim.counts(d1,d2,size)
+	pval  <- mapply( libgimli$pval.diff, d$nc1, d$c1, d$nc2, d$c2 ) 
+}
+
+libgimli$fisher.diff<-function(nc1,c1,nc2,c2){
+		ft<-fisher.test(matrix(c(nc1,c1,nc2,c2),nrow=2),alternative="greater")
+		ft$p.value
+}
+
+libgimli$distrib.pval<-function(d1,d2,size,f){
+	d<-libgimil$sim.counts(d1,d2,size)
+	pval  <- mapply( f, d$nc1, d$c1, d$nc2, d$c2 ) 
+}
+
+libgimli$theta.segment<-function( nc , c ){
+	sum.nc<-sum(ns)
+	sum.c<-sum(c)
+	if ( sum.nc + sum.c == 0 ) {stop("undefined position")}
+	theta<-sum.nc/(sum.nc+sum.c)
+	return(theta)	
+}
+
+libgimli$lik.segment<-function(nc,c){
+	theta<-	theta.segment(nc,c);
+	lik<-sum(binom(x+nc,size=nc+c,p=theta,log=T))
+	return(lik)
+}
+
+libgimli$merged.lik<-function(nc1,c1,nc2,c2){
+	return(lik.segment(nc1+nc2,c1+c2))
+}
+
+libgimli$delta.lik<-function(nc1,c1,nc2,c2){
+	ml<-merged.lik(nc1,c1,nc2,c2)
+	l1<-lik.segment(nc1,c1)
+	l2<-lik.segment(nc2,c2)
+	return ( ml - l1 - l2 )
+}
+
 #I/O
+
 libgimli$load.segments<-function(fname){
 	#returns a data frame
-	seg<-read.table(fname,stringsAsFactors=F)
-	names(seg)<-c("chrom","start","end","ncpgs","min","mle","max","loglik",
-		"delta","lambda")
+	seg<-read.table( fname , stringsAsFactors=F )
+	names(seg)<-c( "chrom","start","end","ncpgs",
+		"min","mle","max","loglik",
+		"delta","lambda" )
 	return(seg)
 }
 
 libgimli$load.meth<-function(fname){
 	meth<-read.table(fname,stringsAsFactors=F)
-	names(meth)<-c("chrom","pos",
-	"phred","meth","var","nc","c",
-	"cov1","cov2"
+	names(meth)<-c( "chrom" , "pos" ,
+	"phred" , "meth" , "var" , "nc", "c" ,
+	"cov1" , "cov2"
 	)
-	return(meth)
+	return( meth )
 }
 
-libgimli$load.dmr<-function(fname){
-	dmr<-read.table(fname,stringsAsFactors=F)
-	names(dmr)<-c("chrom1",
-	"start1","end1","ncpgs1",
-	"min1","mle1","max1",
-	"lik1","delta.lik1","lambda1",
-	"chrom2","start2","end2","ncpgs2",
-	"min2","mle2","max2",
-	"lik2","delta.lik2","lambda2",
+libgimli$load.dmr<-function( fname ){
+	dmr<-read.table( fname , stringsAsFactors=F )
+	names( dmr ) <- c( "chrom1",
+	"start1", "end1", "ncpgs1",
+	"min1", "mle1", "max1",
+	"lik1", "delta.lik1", "lambda1",
+	"chrom2", "start2", "end2", "ncpgs2",
+	"min2", "mle2", "max2",
+	"lik2", "delta.lik2", "lambda2",
 	"olap"
 	)
-	return(dmr)
+	return( dmr )
 }
 
-libgimli$read.binary.table <- function(fname){
-	bin.table<-read.table(fname, skip=1, header=T, stringsAsFactors=F)
-	return(bin.table)
+libgimli$read.binary.table <- function( fname ){
+	bin.table <- read.table( fname, skip=1, header=T, stringsAsFactors=F )
+	return( bin.table )
 }
 
 libgimli$count.conf <- function(df){
@@ -195,50 +288,38 @@ libgimli$plot.multiple.segments<-function( list_of_seg ,  lb , ub, colors ){
 		}
 	}
 }
-#
-libgimli$theta.segment<-function(nc,c){
-	sum.nc<-sum(ns)
-	sum.c<-sum(c)
-	if ( sum.nc + sum.c == 0 ) {stop("undefined position")}
-	theta<-sum.nc/(sum.nc+sum.c)
-	return(theta)	
-}
-#
-libgimli$lik.segment<-function(nc,c){
-	theta<-	theta.segment(nc,c);
-	lik<-sum(binom(x+nc,size=nc+c,p=theta,log=T))
-	return(lik)
-}
-#
-libgimli$merged.lik<-function(nc1,c1,nc2,c2){
-	return(lik.segment(nc1+nc2,c1+c2))
-}
-#
-libgimli$delta.lik<-function(nc1,c1,nc2,c2){
-	ml<-merged.lik(nc1,c1,nc2,c2)
-	l1<-lik.segment(nc1,c1)
-	l2<-lik.segment(nc2,c2)
-	return (ml-l1-l2)
-}
-#
+
+
 libgimli$take.slice<-function(rd,lb,ub){
 	q<-IRanges(lb,ub)
 	ov<-findOverlaps(RangedData(q),rd)
 	rd[as.matrix(ov)[,2],]
 }
-#
+
 libgimli$rd.of.bed<-function(df){
 	pos<-IRanges(df[,2],df[,3])
 	RangedData(pos)
 }
-#
+
+libgimli$gr.of.bed<-function(df){
+	cat("GRanges of bed\n")
+	GRanges(df[[1]],IRanges(df[,2],df[,3]))		
+}
+
 libgimli$rd.of.meth<-function(df,col.pos,col.values){
 	#second columns of df must be a genomic coordinate
 	pos<-IRanges(df[,col.pos],df[,col.pos])
 	values<-df[,col.values]
 	RangedData(pos,values)
 }
-#
+
+libgimli$gr.of.meth<-function(df,col.pos,col.values){
+	cat("GRanges of methylation values\n")
+	pos<-IRanges(df[,col.pos],df[,col.pos])
+	values<-df[[col.values]]
+	GRanges(df[[1]],pos,score=values)
+}
+
 libgimli$intersect.with.bed<-function( bed.rd , meth.rd ){
 	res<-matrix(1:(nrow(bed.rd)*6),nrow=nrow(bed.rd))
 	ov.bed.meth     <- findOverlaps(bed.rd,meth.rd)
@@ -269,7 +350,43 @@ libgimli$intersect.with.bed<-function( bed.rd , meth.rd ){
 	names(res)<-c("start","end","ncpg","min","median","max")
 	res
 }
-#
+
+libgimli$genomic.intersect.with.bed<-function( bed, bed.gr , meth.gr ){
+	res<-matrix(0,nrow=length(bed.gr),ncol=7)
+	ov.bed.meth     <- findOverlaps(bed.gr,meth.gr)
+	if (length(ov.bed.meth)==0){
+		stop("no overlaps\n")
+	}
+	ov.bed.meth.mat <- as.matrix(ov.bed.meth)
+	lb  <- min(ov.bed.meth.mat[,1])	
+	ub  <- max(ov.bed.meth.mat[,1])
+	keys<-unique(ov.bed.meth.mat[,1])
+	for ( i in 1:length(bed.gr)){
+		if ( i %% 100 == 0) {
+			cat("processing interval:",i,"\n")
+		}
+		res[i,1]<-bed[i,1]	
+		res[i,2]<-bed[i,2]	
+		res[i,3]<-bed[i,3]	
+		if (i %in% keys){
+			sl<-meth.gr[ov.bed.meth.mat[ov.bed.meth.mat[,1]==i,2],]
+			res[i,4] <- length(sl$score)
+			mv <- sl$score
+			res[i,5]<-min(mv)
+			res[i,6]<-median(mv)
+			res[i,7]<-max(mv)
+		} else {
+			res[i,4] <- 0 
+			res[i,5]<- NA 
+			res[i,6]<- NA
+			res[i,7]<- NA
+		}
+	}
+	res<-data.frame(res)
+	names(res)<-c("chr","start","end","ncpg","min","median","max")
+	res
+}
+
 while("libgimli" %in% search())
   detach("libgimli")
 attach(libgimli)

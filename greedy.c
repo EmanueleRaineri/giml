@@ -14,7 +14,7 @@
 #define MAXLINES 2000000
 #define FILE_END 0
 #define CHANGE_CHROM 1
-#define NLAMBDA 15
+#define MAXNLAMBDA 100
 
 typedef struct table{
 	char* chrom;
@@ -188,10 +188,10 @@ void delta_lik( node* el, table* data ){
 	}
 	el->delta = el->delta - el->loglik - el->next->loglik;
 	// here distance penalty 
-	d = data->pos[el->next->from] - data->pos[el->to];
-	if (d<=0){
-		fprintf(stderr,"d<=0 : %d (%d -> %d ) \n",d,data->pos[el->next->from],
-		data->pos[el->to]);
+	d =  data->pos[el->next->from] - data->pos[el->to]; 
+	if ( d<=0 ){
+		fprintf( stderr , "d<=0 : %d (%d -> %d )\n" , d , data->pos[el->to],
+		data->pos[el->next->from] );
 		exit(1);
 	}
 	dpen = dist_penalty(d);
@@ -513,7 +513,53 @@ int main(int argc, char* argv[]){
 	FILE *in;
 	int cutoff=1;
 
-	switch(argc){
+	if ( argc != 3 ){
+		fprintf(stderr,"usage: gimli FILE LAMBDAS\n");
+		exit(1);
+	}
+
+	if ( strcmp(argv[1],"-")==0 ){
+		in=stdin;
+	}else{
+		in = fopen(argv[1],"r");
+		if ( in == NULL ){
+			fprintf(stderr,"can't open %s\n" , argv[1] );
+			exit( 1 );
+		}
+	}
+
+	int nlambda=0;
+	
+	/*
+	float lambda[NLAMBDA] = {0.1,0.2,0.5,
+	1,2,5,
+	10,20,50,
+	100,200,500,
+	1000,2000,5000};
+	*/
+
+	float *lambda = malloc(MAXNLAMBDA*sizeof(float));
+		
+	char *c=argv[2];
+	char *ref=c;
+
+	while(1){
+		if ( *c=='\0' ) {
+			lambda[nlambda++]=atof( ref );	
+			break;
+		}
+		if (*c++==':') {
+			lambda[ nlambda++ ]=atof( ref );
+			ref = c;
+		}
+	}
+
+	fprintf( stderr , "%d lambda(s)\n", nlambda );
+	for( i=0; i<nlambda; i++ ){
+		fprintf(stderr, "lambda[%d]=%.4g\n",i,lambda[i]);				
+	}
+	
+/*	switch(argc){
 		case 1:
 			in = stdin;
 			break;
@@ -525,18 +571,14 @@ int main(int argc, char* argv[]){
 			}
 			break;
 		default:
-			fprintf(stderr,"usage: gimli [filename]\n");
+			fprintf(stderr,"usage: gimli FILE LAMBDAS\n");
 			exit(1);
-	}
+	} 
+*/
 
 	table* data;
 	
-	int ilambda,status ;
-	float lambda[NLAMBDA] = {0.1,0.2,0.5,
-	1,2,5,
-	10,20,50,
-	100,200,500,
-	1000,2000,5000};
+	int ilambda=0,status ;
 	node* el, *head;
 	heap* h;	
 	node* maxn;
@@ -551,7 +593,7 @@ int main(int argc, char* argv[]){
 	}
 	
 read:
-	data=malloc(sizeof(table));
+	data = malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
 	data->loglik     = malloc(MAXLINES*sizeof(float));
@@ -566,12 +608,12 @@ read:
 	nlines = list_of_file( in, buffer,  head  , data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
 
-	data->theta      =  realloc(data->theta,nlines*sizeof(float));
-	data->loglik     =  realloc(data->loglik,nlines*sizeof(float));
-	data->pos        =  realloc(data->pos,nlines*sizeof(int));
-	data->nc         =  realloc(data->nc,nlines*sizeof(int));
-	data->c          =  realloc(data->c,nlines*sizeof(int));
-	data->segment_id =  realloc(data->segment_id,nlines*sizeof(int));
+	data->theta      =  realloc( data->theta , nlines*sizeof(float) );
+	data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
+	data->pos        =  realloc( data->pos , nlines*sizeof(int));
+	data->nc         =  realloc( data->nc , nlines*sizeof(int));
+	data->c          =  realloc( data->c ,  nlines*sizeof(int));
+	data->segment_id =  realloc( data->segment_id , nlines*sizeof(int));
 	
 	/* HEAP */
 	h = malloc(sizeof(heap));
@@ -598,7 +640,6 @@ read:
 	int loopc=0;
 	float deltalik,totloglik=0;
 	if (DEBUG) print_heap(h);
-	ilambda=0;
 	mergec=0;	
 	if (cutoff) {
 		fprintf(stderr,"with distance penalty\n");
@@ -660,7 +701,7 @@ read:
 			assert ( heap_wrong_index(h)==0 );
 			le = print_segmentation(stdout, head , lambda[ilambda] , data, &totloglik );
 			fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
-			if (ilambda<(NLAMBDA-1))
+			if (ilambda<(nlambda-1))
 				ilambda++;
 			else break;
 		}	
@@ -691,7 +732,7 @@ read:
 			goto read;
 			break;
 		default:
-			fprintf(stderr,"illegal status:%d at line %d\n",status,__LINE__);
+			fprintf(stderr, "illegal status:%d at line %d\n", status, __LINE__ );
 			exit(1);
 	}
 
