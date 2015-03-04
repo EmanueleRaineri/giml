@@ -218,7 +218,7 @@ void fill_node(node* el, table* data, int i){
 		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
 }
 
-int list_of_file(FILE* in, char* buffer , node* head, table* data ,int* status){
+int list_of_file( FILE* in, char* buffer , node* head, table* data ,int* status ){
 	char* refchr = malloc( LINE*sizeof(char) );
 	char* tmp = malloc( LINE*sizeof(char) );
 	sscanf( buffer , "%s %*d %*d %*d" , refchr );
@@ -607,7 +607,8 @@ read:
 
 	nlines = list_of_file( in, buffer,  head  , data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
-
+	//print_list(stderr,head,data->pos,0);
+	
 	data->theta      =  realloc( data->theta , nlines*sizeof(float) );
 	data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
 	data->pos        =  realloc( data->pos , nlines*sizeof(int));
@@ -623,6 +624,7 @@ read:
 	
 	fprintf(stderr,"initialize delta...\n");
 	el=head;
+	//print_list(stderr,head,data->pos,0);
 	
 	while(1){
 		if ( el->next == NULL ) {
@@ -701,7 +703,7 @@ read:
 			assert ( heap_wrong_index(h)==0 );
 			le = print_segmentation(stdout, head , lambda[ilambda] , data, &totloglik );
 			fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
-			if (ilambda<(nlambda-1))
+			if ( ilambda < ( nlambda - 1 ) )
 				ilambda++;
 			else break;
 		}	
@@ -720,9 +722,9 @@ read:
 	free( data->segment_id );
 	free( data );
 	
-	free(h->heap);
+	free( h->heap );
 	h->heap=NULL;
-	free(h);
+	free( h );
 	h=NULL;
 	
 	switch(status){
@@ -735,8 +737,8 @@ read:
 			fprintf(stderr, "illegal status:%d at line %d\n", status, __LINE__ );
 			exit(1);
 	}
-
-	if (in != stdin) fclose(in);
-	free(buffer);
-	return(0);
+	
+	if ( in != stdin ) fclose( in );
+	free( buffer );
+	return( 0 );
 }

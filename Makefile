@@ -1,4 +1,4 @@
-PLACE=mac
+PLACE=work
 
 ifeq ($(PLACE),work)
 BED=/usr/bin
@@ -10,6 +10,7 @@ DATA  =~/Desktop/meth_data
 METH = $(DATA)/G199_cpg.chr1.txt.gz $(DATA)/G200_cpg.chr1.txt.gz $(DATA)/G201_cpg.chr1.txt.gz $(DATA)/G202_cpg.chr1.txt.gz
 GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(DATA)/G201_cpg.chr1.gimli.1000 $(DATA)/G202_cpg.chr1.gimli.1000 
 C004GDH1GIMLI=$(DATA)/C004GD51_cpg.chr1.gimli.gz
+GIMLICMD = ./gimli - 0.1:0.2:0.5:1:2:5:10:20:50:100:200:500:1000:2000:5000
 
 gimli: greedy.c
 	gcc -Wall  -o $@ greedy.c -lm
@@ -49,20 +50,20 @@ out.correla.eps: G199.chr1.correla.txt G200.chr1.correla.txt G201.chr1.correla.t
 	Rscript correla_fig.R
 
 $(C004GDH1GIMLI): $(DATA)/C004GD51_cpg.chr1.txt.gz
-	zcat $^ | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $@	
+	zcat $^ | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $@	
 
 
 $(DATA)/G199_cpg.chr1.gimli.gz: $(DATA)/G199_cpg.chr1.txt.gz
-	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
+	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
 	
 $(DATA)/G202_cpg.chr1.gimli.gz: $(DATA)/G202_cpg.chr1.txt.gz
-	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G202_cpg.chr1.gimli.gz
+	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G202_cpg.chr1.gimli.gz
 
 $(DATA)/G200_cpg.chr1.gimli.gz : $(DATA)/G200_cpg.chr1.txt.gz
-	zcat $(DATA)/G200_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G200_cpg.chr1.gimli.gz
+	zcat $(DATA)/G200_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G200_cpg.chr1.gimli.gz
 
 $(DATA)/G201_cpg.chr1.gimli.gz : $(DATA)/G201_cpg.chr1.txt.gz	
-	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | ./gimli 2> /dev/null | gzip -c > $(DATA)/G201_cpg.chr1.gimli.gz
+	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G201_cpg.chr1.gimli.gz
 
 $(GIMLI1000) : $(DATA)/G199_cpg.chr1.gimli.gz $(DATA)/G200_cpg.chr1.gimli.gz $(DATA)/G201_cpg.chr1.gimli.gz $(DATA)/G202_cpg.chr1.gimli.gz
 	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G199_cpg.chr1.gimli.1000
