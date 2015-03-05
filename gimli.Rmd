@@ -1,13 +1,16 @@
 ---
 title: Gimli
 author: Ema
-date: 11 December 2014
+date: 5 March 2015 
 ---
 
 #Introduction
 
 
 ```gimli``` is a software which computes multiscale segmentations of methylation data.
+
+Segmentations with very long segments will necessarily be more imprecise, while short segments
+will more often correspond to better defined (less variable) methylation values.
 
 The figure below corresponds to segmenting the same genomic region (chr10, from 1.1885e8,1.1893e8)
 at three different levels of coarseness encoded by the parameter $\lambda$ : these three levels also broadly
@@ -19,7 +22,6 @@ source("plot_segments.R")
 
 #input file format
 
-At the moment ```gimli``` processes chromosomes one at the time (i.e. each chromosome must be in a separate file).
 The input format is very simple, for example
 
 ```
@@ -34,15 +36,23 @@ where the $4$ fields are chromosome, position along the chromosome, non converte
 
 ```gimli``` sits on the cluster at ```/home/devel/eraineri/shared/gimli```.
 
-There's no need to create explicitly a file with the right format to compute the segmentation: one can use
+The syntax to use ```gimli``` is, for example:
+
+```gimli input.file 1:10:100:1000```
+
+where ```input.file``` contains the methylation values and ```1:10:100:1000``` are $4$ values for $\lambda$
+which will be tried one after the other.
+
+
+There's no need to create in advance a file with the right format : one can use
 the process substitution syntax of UNIX to prepare the input on the fly:
 
 ```
-gimli <(zcat /scratch/devel/heath/Blueprint/Blueprint_8/G199_cpg.txt.gz  | awk '{if ($1=="chr10" && $2<=1.22e8 && $2>=1.12e8) print $1,$2,$6,$7}') > test.out 2>test.log
+gimli <(zcat /scratch/devel/heath/Blueprint/Blueprint_8/G199_cpg.txt.gz  | awk '{if ($1=="chr10" && $2<=1.22e8 && $2>=1.12e8) print $1,$2,$6,$7}') 1:10:100:1000 > test.out 2>test.log
 ```
-
-I am experimenting with a region on chr10 which goes from 1.12e8 to 1.22e8; this corresponds to $83821$ positions 
-and is processed in less than $2s$.
+ 
+Dealing all the chromosomes of a typical CpG file ($\approx 20\times 10^6$ positions) 
+takes around $15$ minutes if one specifies $4$ $\lambda$s.
 
 #output file format
 
@@ -57,7 +67,7 @@ with minimum $\theta$ equal to $0.9091$, maximum $\theta$ equal to $1$ and avera
 estimate of $\theta$) equal to $0.9654$.
 
 Column $8$ ($-3.05$) is a confidence score on the segment ( this can go from $-\infty$ to $0$, the higher the more confident; but one can simply use the difference between maximum and minimum 
-$\theta$ in practice) and the last field ($2$) is $\lambda$, the parameter controlling the coarseness of the segmentation ; typically
+$\theta$ in practice) and the last field ($2$) is $\lambda$; as said, typically
 to larger $\lambda$s there correspond larger segments, see plot below.
 
 ```{r echo=F}
@@ -67,23 +77,15 @@ source("stats_segmentation.R")
 
 #Examples
 
-##PMD region.
 
-For the above mentioned PMD region, this is the segmentation with $\lambda=1000$ across G199(green), G200(blue), G201(magenta),
-G202(cyan).
-
-![](G199.G200.G201.G202.png)
+1. segmentation of G199 and G202, chromosome 1.
 
 
+![](G199.G202.chr1.gimli.png)
+
+2. some DMRs (G199 vs G202) also on chr1, found by comparing segmentations and picking overlapping segments
+which have different methylation levels.
+
+![](G199.G202.100.200.dmr.png)
 
 
-
-#to do
-
-*on the biological side : check segments against imprinted regions, promoter regions, etc...
-
-*on the statistical/computational side : 
-	
-	+introduce spatial constraints so as not to build long segments in regions where there are no CpGs.
-
-	+extend the same approach to DMRs
