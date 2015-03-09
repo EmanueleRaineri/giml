@@ -35,8 +35,10 @@ typedef struct node{
 	int to;
 	float loglik;
 	float delta;
-	float sumtheta;
+	//float sumtheta;
 	float mletheta;
+	float mean;
+	float var;
 	int sum_nc;
 	int sum_c;
 	int segment_id;
@@ -108,50 +110,46 @@ int print_list(FILE* stream, node* head, int* pos, float lambda){
 	return(le);
 }
 
-
-void update_sdev(node* el, table* data){
-	/*I can reuse the data structure I designed 
-	to store methylation information
-	in order to store data needed to
-	compute DMRs*/
-	float sumtheta=0,sumtheta2=0;
-	int i,n;
-	float* theta = data->theta;
-	n = el->to-el->from+1;
-	for( i = el->from; i <= el->to; i++ ){
-		sumtheta+=theta[i];		
-		sumtheta2+=theta[i]*theta[i];
+void mean_var(node* el, table* data, float* mean, float* var){
+	float mold,mnew,sold,snew,xk;
+	int k;
+	mold = data->theta[el->from];
+	sold=0.0;
+	for ( k=1 ; k< el->to -el->from +1 ; k++ ){
+		xk = data->theta[el->from+k];
+		mnew = mold+( xk - mold )/(k+1);
+		snew = sold + ( xk - mold )* (xk - mnew);
 	}
-	el->sumtheta = sumtheta;
-	// loglik contains the standard deviation
-	el->loglik =  (1.0/n)*sumtheta2-sumtheta*sumtheta ;
+	*mean= mnew;
+	*var = snew;
 }
 
 void update_lik(node* el, table* data){
-	float sumtheta=0;
+	//float sumtheta=0;
 	int sum_nc=0;
 	int sum_c=0;
 	int i;
 	int* nc=data->nc;
 	int* c = data->c;
-	float* theta = data->theta;
+	//float* theta = data->theta;
 	for( i = el->from; i <= el->to; i++ ){
-		sum_nc+=nc[i];
-		sum_c+=c[i];
-		sumtheta+=theta[i];		
+		sum_nc += nc[i];
+		sum_c  += c[i];
+		//sumtheta+=theta[i];		
 	}
-	el->sumtheta = sumtheta;
-	el->sum_nc=sum_nc;
-	el->sum_c=sum_c;
-	el->mletheta=(float)sum_nc/(sum_nc+sum_c);
-	if (el->mletheta==0 && el->sum_nc>0) {
-		fprintf(stderr,"update_lik:invalid mle %.4f\n",el->mletheta);
-		exit(1);
+	//el->sumtheta = sumtheta;
+	el->sum_nc   = sum_nc;
+	el->sum_c    = sum_c;
+	el->mletheta = (float)sum_nc/(sum_nc+sum_c);
+	if ( el->mletheta==0 && el->sum_nc>0 ) {
+		fprintf( stderr, "update_lik:invalid mle %.4f\n", el->mletheta );
+		exit( 1 );
 	}
 	el->loglik=0;
 	for( i = el->from; i <= el->to; i++ ){
-		el->loglik+=dbinom( nc[i] , nc[i]+c[i] , el->mletheta );
+		el->loglik += dbinom( nc[i] , nc[i]+c[i] , el->mletheta );
 	}
+	mean_var(el, data, &(el->mean),&(el->var));
 }
 
 void delta_lik( node* el, table* data ){
@@ -206,7 +204,12 @@ void delta_lik( node* el, table* data ){
 	el->delta = (el->delta)*dpen;
 }
 
+
 void fill_node(node* el, table* data, int i){
+		/*
+			this fills the node when it contains on locus only,
+			during the initial upload of the input file
+		*/
 		el->from = i;
 		el->to   = i;
 		el->loglik = data->loglik[i];
@@ -214,8 +217,10 @@ void fill_node(node* el, table* data, int i){
 		el->segment_id = i;	
 		el->sum_nc = data->nc[i];
 		el->sum_c  = data->c[i];
-		el->sumtheta = data->theta[i];
+		//el->sumtheta = data->theta[i];
 		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
+		el->mean = data->theta[i];
+		el->var  = 0.0;
 }
 
 int list_of_file( FILE* in, char* buffer , node* head, table* data ,int* status ){
@@ -558,23 +563,6 @@ int main(int argc, char* argv[]){
 	for( i=0; i<nlambda; i++ ){
 		fprintf(stderr, "lambda[%d]=%.4g\n",i,lambda[i]);				
 	}
-	
-/*	switch(argc){
-		case 1:
-			in = stdin;
-			break;
-		case 2:
-			in = fopen(argv[1],"r");
-			if (in==NULL){
-				fprintf(stderr,"can't open %s\n",argv[1]);
-				exit(1);
-			}
-			break;
-		default:
-			fprintf(stderr,"usage: gimli FILE LAMBDAS\n");
-			exit(1);
-	} 
-*/
 
 	table* data;
 	
