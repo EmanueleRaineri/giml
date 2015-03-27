@@ -113,15 +113,23 @@ int print_list(FILE* stream, node* head, int* pos, float lambda){
 void mean_var(node* el, table* data, float* mean, float* var){
 	float mold,mnew,sold,snew,xk;
 	int k;
+	int n = el->to - el->from +1;
+	if (n==1){
+		*mean = data->theta[el->from];
+		*var=0.0;
+		return;
+	}
 	mold = data->theta[el->from];
 	sold=0.0;
-	for ( k=1 ; k< el->to -el->from +1 ; k++ ){
+	for ( k=1 ; k< n ; k++ ){
 		xk = data->theta[el->from+k];
-		mnew = mold+( xk - mold )/(k+1);
-		snew = sold + ( xk - mold )* (xk - mnew);
+		mnew = mold + ( xk - mold )/( k + 1 );
+		snew = sold + ( xk - mold )* ( xk - mnew );
+		mold = mnew;
+		sold = snew;
 	}
 	*mean= mnew;
-	*var = snew;
+	*var = snew/(n-1);
 }
 
 void update_lik(node* el, table* data){
@@ -309,10 +317,14 @@ int print_segmentation(FILE* stream, node* head, float lambda, table* data, floa
 			adjlik+=data->loglik[i];
 		}
 		*totloglik+=el->loglik;
-		fprintf(stream,"%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4g\t%.4g\t%.4f\n",
-		data->chrom,data->pos[el->from],data->pos[el->to],n,
-		mintheta,el->mletheta,maxtheta,
-		el->loglik-adjlik,el->delta,lambda);
+		fprintf( stream , "%s\t%d\t%d\t%d\t" ,
+		data->chrom,data->pos[el->from],data->pos[el->to],n);
+		fprintf(stream,"%.4f\t%.4f\t%.4f\t", 
+			mintheta,el->mletheta,maxtheta);
+		fprintf(stream,"%.4f\t%.4g\t", 
+			el->mean,el->var);
+		fprintf(stream,"%.4g\t%.4g\t%.4f\n",
+			el->loglik-adjlik, el->delta, lambda );
 		le++;
 	}
 	return(le);
@@ -534,14 +546,6 @@ int main(int argc, char* argv[]){
 	}
 
 	int nlambda=0;
-	
-	/*
-	float lambda[NLAMBDA] = {0.1,0.2,0.5,
-	1,2,5,
-	10,20,50,
-	100,200,500,
-	1000,2000,5000};
-	*/
 
 	float *lambda = malloc(MAXNLAMBDA*sizeof(float));
 		
