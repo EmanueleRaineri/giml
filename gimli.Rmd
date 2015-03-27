@@ -89,3 +89,15 @@ which have different methylation levels.
 ![](G199.G202.100.200.dmr.png)
 
 
+# known bugs
+
+1 a chromosome containing one CpG only at the end of a file does not get processed. For example the file
+C000S5A1bs_cpg.txt.gz ends ins
+```
+chrY	59033101	30	0.840051	0.083599	15	3	37	37
+chrY	59033547	21	0.928142	0.0975083	10	1	23	23
+chrM	1539	88	0	0.00779885	1	189	380	380
+```
+
+and chrM does not get processed
+

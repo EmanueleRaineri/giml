@@ -518,6 +518,23 @@ void merge3(node* maxn, node* tmpnext, heap* h, table* data){
 	tmpnext = NULL;
 }
 
+
+void free_all(node* head, table* data, heap* h){
+	free_list( head );
+	free( data->chrom );      
+	free( data->theta );      
+	free( data->loglik );     
+	free( data->pos );       
+	free( data->nc );       
+	free( data->c );
+	free( data->segment_id );
+	free( data );
+	free( h->heap );
+	h->heap=NULL;
+	free( h );
+	h=NULL;
+}
+
 int main(int argc, char* argv[]){
 	#if defined(NDEBUG)
 	fprintf(stderr,"Assert disabled.\n");
@@ -603,10 +620,10 @@ read:
 	
 	data->theta      =  realloc( data->theta , nlines*sizeof(float) );
 	data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
-	data->pos        =  realloc( data->pos , nlines*sizeof(int));
-	data->nc         =  realloc( data->nc , nlines*sizeof(int));
-	data->c          =  realloc( data->c ,  nlines*sizeof(int));
-	data->segment_id =  realloc( data->segment_id , nlines*sizeof(int));
+	data->pos        =  realloc( data->pos , nlines*sizeof(int) );
+	data->nc         =  realloc( data->nc , nlines*sizeof(int) );
+	data->c          =  realloc( data->c ,  nlines*sizeof(int) );
+	data->segment_id =  realloc( data->segment_id , nlines*sizeof(int) );
 	
 	/* HEAP */
 	h = malloc(sizeof(heap));
@@ -630,7 +647,7 @@ read:
 		el = el->next;
 	}
 	fprintf(stderr,"done\n");
-	le=print_list(stderr,head,data->pos,0);	
+	le=print_list( stderr , head , data->pos , 0 );	
 	int loopc=0;
 	float deltalik,totloglik=0;
 	if (DEBUG) print_heap(h);
@@ -650,8 +667,8 @@ read:
 			/* merge maxn with the following node */
 			fprintf( stderr , "merging %d ( %d -> %d )@ lambda=%.4f maxn->delta=%.4f deltalik=%.4f\n", 
 				maxn->segment_id,data->pos[maxn->from],
-				data->pos[maxn->next->to],lambda[ilambda],maxn->delta, deltalik );
-			if (DEBUG) {
+				data->pos[maxn->next->to], lambda[ilambda], maxn->delta, deltalik );
+			if ( DEBUG ) {
 				fprintf(stderr,"maxn before merging\n");
 				print_node( maxn , data->pos );
 			}
@@ -662,19 +679,19 @@ read:
 					data->segment_id[i] = maxn->segment_id;
 			}	
 			/** 3 cases : (1)max==head **/
-			if (maxn->prev==NULL && tmpnext!=NULL && tmpnext->next!=NULL ){
+			if ( maxn->prev==NULL && tmpnext!=NULL && tmpnext->next!=NULL ){
 				assert(maxn==head);
 				if (DEBUG) fprintf(stderr,"merging 1\n");
 			 	merge1( maxn,  tmpnext,  h,  data);
 			} 
 			/**  (2)max==node in the middle of long list **/
-			if (maxn->prev!=NULL && tmpnext!=NULL && tmpnext->next!=NULL){
+			if ( maxn->prev!=NULL && tmpnext!=NULL && tmpnext->next!=NULL ){
 				if (DEBUG) fprintf(stderr,"merging 2\n");
 			 	merge2( maxn,  tmpnext,  h,  data);
 				goto finish;	
 			}
 			/** (3)max==last but one node, merging with the last **/
-			if (tmpnext->next == NULL){
+			if ( tmpnext->next == NULL ){
 				if (DEBUG) fprintf(stderr,"merging 3\n");
 			 	merge3( maxn,  tmpnext,  h,  data);
 			}
@@ -686,7 +703,7 @@ read:
 				}
 				if (DEBUG) print_segmentation(stderr,head,lambda[ilambda],data,&totloglik);
 				assert ( heap_wrong_index(h)==0 );
-		} else { // no possible mergings
+		} else { // can't merge, deltalik<0
 			fprintf( stderr , "not merging %d ( %d -> %d )@ lambda=%.4f maxn->delta=%.4f deltalik=%.4f\n", 
 				maxn->segment_id,data->pos[maxn->from],
 				data->pos[maxn->next->to],lambda[ilambda],maxn->delta, deltalik );
@@ -695,6 +712,7 @@ read:
 			assert ( heap_wrong_index(h)==0 );
 			le = print_segmentation(stdout, head , lambda[ilambda] , data, &totloglik );
 			fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
+			// should change chromosome before changing lambda
 			if ( ilambda < ( nlambda - 1 ) )
 				ilambda++;
 			else break;
@@ -704,7 +722,9 @@ read:
 	
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
 	
-	free_list( head );
+	free_all(head,data,h);
+	
+	/*free_list( head );
 	free( data->chrom );      
 	free( data->theta );      
 	free( data->loglik );     
@@ -717,7 +737,7 @@ read:
 	free( h->heap );
 	h->heap=NULL;
 	free( h );
-	h=NULL;
+	h=NULL;*/
 	
 	switch(status){
 		case FILE_END:
