@@ -1,7 +1,7 @@
 ---
 title: Gimli
 author: Ema
-date: 5 March 2015 
+date: 8 April 2015 
 ---
 
 #Introduction
@@ -42,7 +42,7 @@ The syntax to use ```gimli``` is, for example:
 
 where ```input.file``` contains the methylation values and ```1:10:100:1000``` are $4$ values for $\lambda$
 which will be tried one after the other.
-
+Also, ```input.file``` can be ```-```if you want to read from the standard input.
 
 There's no need to create in advance a file with the right format : one can use
 the process substitution syntax of UNIX to prepare the input on the fly:
@@ -59,15 +59,16 @@ takes around $15$ minutes if one specifies $4$ $\lambda$s.
 ```gimli``` outputs the segments in a format similar to BED, with a lot of extra information. One example output line is:
 
 ```
-chr10	116159696	116160685	8	0.9091	0.9654	1.0000	-3.05	-3.893	2.0000
+chr1	10489	10525	4	0.7826	0.8667	0.9231	0.8669	0.004079	-1.238	-1.593	1.0000
 ```
 
-which represents a segment on chromsome 10 from $116159696$ to $116160685$ containing $8$ CpGs,
-with minimum $\theta$ equal to $0.9091$, maximum $\theta$ equal to $1$ and average (infact: maximum likelihood 
-estimate of $\theta$) equal to $0.9654$.
-
-Column $8$ ($-3.05$) is a confidence score on the segment ( this can go from $-\infty$ to $0$, the higher the more confident; but one can simply use the difference between maximum and minimum 
-$\theta$ in practice) and the last field ($2$) is $\lambda$; as said, typically
+which represents a segment on chromosome $1$ from $10489$ to $10525$ containing $4$ CpGs,
+with minimum $\theta$ equal to $0.9091$, maximum $\theta$ equal to $1$,  maximum likelihood 
+estimate of $\theta$ equal to $0.9654$, mean $\theta$ equal to $0.8669$ and variance of the
+methylation values included in the segment corresponds to $0.004079$.
+Column $10$ ($-1.238$) is a confidence score on the segment 
+( this can go from $-\infty$ to $0$, the higher the more confident; but one can simply use the difference between maximum and minimum 
+$\theta$ in practice) and the last field ($1.00$) is $\lambda$; as said, typically
 to larger $\lambda$s there correspond larger segments, see plot below.
 
 ```{r echo=F}
@@ -87,17 +88,4 @@ source("stats_segmentation.R")
 which have different methylation levels.
 
 ![](G199.G202.100.200.dmr.png)
-
-
-# known bugs
-
-1 a chromosome containing one CpG only at the end of a file does not get processed. For example the file
-C000S5A1bs_cpg.txt.gz ends ins
-```
-chrY	59033101	30	0.840051	0.083599	15	3	37	37
-chrY	59033547	21	0.928142	0.0975083	10	1	23	23
-chrM	1539	88	0	0.00779885	1	189	380	380
-```
-
-and chrM does not get processed
 

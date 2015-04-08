@@ -536,6 +536,9 @@ void free_all(node* head, table* data, heap* h){
 }
 
 int main(int argc, char* argv[]){
+	fprintf(stderr,"GIMLI -- emanuele.raineri@gmail.com\n");
+	fprintf(stderr,"source code timestamp: %s\n", __TIMESTAMP__ );
+	fprintf(stderr,"compiled on %s %s\n",__DATE__ , __TIME__ );
 	#if defined(NDEBUG)
 	fprintf(stderr,"Assert disabled.\n");
 	#else
