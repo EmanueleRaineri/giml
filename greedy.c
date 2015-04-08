@@ -587,7 +587,7 @@ int main(int argc, char* argv[]){
 
 	table* data;
 	
-	int ilambda=0,status ;
+	int ilambda=0,status=CHANGE_CHROM ;
 	node* el, *head;
 	heap* h;	
 	node* maxn;
@@ -602,6 +602,8 @@ int main(int argc, char* argv[]){
 	}
 	
 read:
+	
+
 	data = malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
@@ -663,6 +665,7 @@ read:
 		assert (heap_wrong_index(h)==0);
 		if (maxn->prev==NULL && maxn->next==NULL) break;
 		deltalik=maxn->delta + lambda[ilambda];
+		loopc++;
 		if ( deltalik >=0 ){
 			/* merge maxn with the following node */
 			fprintf( stderr , "merging %d ( %d -> %d )@ lambda=%.4f maxn->delta=%.4f deltalik=%.4f\n", 
@@ -712,37 +715,22 @@ read:
 			assert ( heap_wrong_index(h)==0 );
 			le = print_segmentation(stdout, head , lambda[ilambda] , data, &totloglik );
 			fprintf( stderr , "lambda %.4f %d segment(s) total loglik=%.4f\n" , lambda[ilambda], le, totloglik );
-			// should change chromosome before changing lambda
-			if ( ilambda < ( nlambda - 1 ) )
-				ilambda++;
+			if ( ilambda < ( nlambda - 1 ) ) ilambda++;
 			else break;
 		}	
-		loopc++;
 	}
 	
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
-	
+
+
 	free_all(head,data,h);
 	
-	/*free_list( head );
-	free( data->chrom );      
-	free( data->theta );      
-	free( data->loglik );     
-	free( data->pos );       
-	free( data->nc );       
-	free( data->c );
-	free( data->segment_id );
-	free( data );
-	
-	free( h->heap );
-	h->heap=NULL;
-	free( h );
-	h=NULL;*/
-	
+	/* perhaps move this at the beginning of the 'read' section*/
 	switch(status){
 		case FILE_END:
 			break;
 		case CHANGE_CHROM:
+			ilambda=0;
 			goto read;
 			break;
 		default:

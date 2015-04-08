@@ -7,7 +7,7 @@ libgimli = new.env()
 #math
 libgimli$loglik<-function(nonconv , conv){
 	nc<-sum(nonconv)
-	co<sum(conv)
+	co<-sum(conv)
 	theta<-nc/(co+nc)
 	dbinom(x=nc,size=nc+co,p=theta,log=T)+
 	nc*theta+co*(1-theta)
