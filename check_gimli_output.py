@@ -11,7 +11,7 @@ for line in met_file:
 
 met_file.close()
 rsum=0
-
+chrsum=0
 for line in gimli_file:
 	fields = line.split()
 	lam = float(fields[-1])

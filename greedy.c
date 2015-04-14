@@ -605,9 +605,8 @@ int main(int argc, char* argv[]){
 	}
 	
 read:
-	
 
-	data = malloc(sizeof(table));
+	data             = malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
 	data->loglik     = malloc(MAXLINES*sizeof(float));
@@ -621,7 +620,6 @@ read:
 
 	nlines = list_of_file( in, buffer,  head  , data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
-	//print_list(stderr,head,data->pos,0);
 	
 	data->theta      =  realloc( data->theta , nlines*sizeof(float) );
 	data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
@@ -638,7 +636,6 @@ read:
 	
 	fprintf(stderr,"initialize delta...\n");
 	el=head;
-	//print_list(stderr,head,data->pos,0);
 	
 	while(1){
 		if ( el->next == NULL ) {
@@ -657,16 +654,21 @@ read:
 	float deltalik,totloglik=0;
 	if (DEBUG) print_heap(h);
 	mergec=0;	
-	if (cutoff) {
+	if (cutoff){
 		fprintf(stderr,"with distance penalty\n");
-	}else{
+	} else{
 		fprintf(stderr,"no distance penalty\n");
 	}
 	while(1){
 		if (DEBUG) print_heap(h);
 		maxn = heap_extract_max(h);
 		assert (heap_wrong_index(h)==0);
-		if (maxn->prev==NULL && maxn->next==NULL) break;
+		if (maxn->prev==NULL && maxn->next==NULL) {
+			for (i=ilambda; i<nlambda;i++){
+				le = print_segmentation(stdout, head , lambda[i] , data, &totloglik );
+			}
+			break;
+		}
 		deltalik=maxn->delta + lambda[ilambda];
 		loopc++;
 		if ( deltalik >=0 ){
@@ -722,18 +724,14 @@ read:
 			else break;
 		}	
 	}
-	
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
-
-
 	free_all(head,data,h);
 	
-	/* perhaps move this at the beginning of the 'read' section*/
 	switch(status){
 		case FILE_END:
 			break;
 		case CHANGE_CHROM:
-			ilambda=0;
+			ilambda = 0;
 			goto read;
 			break;
 		default:

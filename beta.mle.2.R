@@ -2,8 +2,8 @@ var.beta<-function(a,b){
 	a*b/((a+b)^2*(a+b+1))
 }
 
-nc<-rep(40,10)
-co<-rep(20,10)
+nc<-rep(28)
+co<-rep(4)
 
 make.fn<-function(nc,co){
 	fn<-function(theta){
