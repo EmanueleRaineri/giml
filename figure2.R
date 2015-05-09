@@ -19,7 +19,6 @@ if (!exists("g199meth")){
 if (!exists("g202meth")){
 	g202meth <- libgimli$load.meth(paste(datadir,"/","G202_cpg.chr1.txt.gz",sep=""))
 }
-
 postscript("G199.G200.G201.G202.chr1.gimli.eps")
 #libgimli$plot.multiple.segments( list(g199,g200,g201,g202) , 
 #	10000 , 2.5e8, rainbow(4) )

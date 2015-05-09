@@ -9,7 +9,7 @@ var.beta<-function(a,b){
 #nc<-20
 #co<-10
 nc<-100
-co<-50
+co<-5
 
 fn<-function(theta){
 	v<-dbinom(x=nc,size=nc+co,p=theta,log=T)

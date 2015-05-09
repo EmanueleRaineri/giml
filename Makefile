@@ -54,7 +54,7 @@ $(C004GDH1GIMLI): $(DATA)/C004GD51_cpg.chr1.txt.gz
 
 
 $(DATA)/G199_cpg.chr1.gimli.gz: $(DATA)/G199_cpg.chr1.txt.gz
-	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
+	zcat $(DATA)/G199_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> $(DATA)/G199_cpg.chr1.gimli.log | gzip -c > $(DATA)/G199_cpg.chr1.gimli.gz
 	
 $(DATA)/G202_cpg.chr1.gimli.gz: $(DATA)/G202_cpg.chr1.txt.gz
 	zcat $(DATA)/G202_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G202_cpg.chr1.gimli.gz

@@ -10,13 +10,13 @@
 \maketitle
 
 \begin{abstract}
-Since it is possible to decorate the human genome with tracks of numerical
-values produced by methods for measuring all sorts of physico-chemical interactions 
-(chromatin modification,
-Hi-C, whole genome bisulfite sequencing, and more), 
-it is useful to implement software 
-which can quickly summarize the data and extract patterns to help 
-automating at least  part of the biological analysis. 
+%Since it is possible to decorate the human genome with tracks of numerical
+%values produced by methods for measuring all sorts of physico-chemical interactions 
+%(chromatin modification,
+%Hi-C, whole genome bisulfite sequencing, and more), 
+%it is useful to implement software 
+%which can quickly summarize the data and extract patterns to help 
+%automating at least  part of the biological analysis. 
 In this paper, I show one efficient way of computing 
 segmentations of methylation values determined by 
 whole genome bisulfite sequencing
@@ -36,15 +36,14 @@ analyzing methylation dataset is that this epigenetic mark seems
 to have effect at various genomic scales 
 (ranging from hundred of bases to megabases), hence a multi scale method 
 is called for. 
-The probabilistic method I introduce here, when coupled with a known greedy 
-algorithm for copy number detection 
-(of which I rewrote the implementation from scratch) 
+The probabilistic method I introduce here 
+coupled with a known procedure previously
+used for copy number detection
 can be used to calculate automatic segmentations at different scales.
 I also show how this 
 kind of statistical modeling is expedient for 
 visualization, comparison across samples,
-comparison with other kind of data which are naturally expressed as a set of 
-segments (e.g. chromatin modifications),  and demarcation of unusual regions in 
+and demarcation of unusual regions in 
 order to direct further analysis (i.e. regions with stark variations in the signal).
 \end{abstract}
 
@@ -82,9 +81,9 @@ using the pairs contained in it.}
 
 Another interesting aspect of methylation is that it possesses some sort of scale 
 invariance: variations can be observed both at the level of a single promoter
-region (hundred of bases, see for example XXX) and when looking at stretches
+region (hundred of bases, see for example XXXmethylseekR paperXXX) and when looking at stretches
 of millions of bases (\cite{largeblocks} ).
-This entails some problems when analyzing this kind of data: a rough
+This brings about contrasting requirements when analyzing this kind of data: a rough
 running average with a window of many megabases might destroy interesting
 local detail, but at the same time large scale (slow) changes are also
 significant and must be looked at.
@@ -93,7 +92,8 @@ of DNA methylation
 data acquired through WGBS and helps making sense of the data and compare 
 it across samples.
 
-A segmentation is a statistical model of a dataset.
+A segmentation is a statistical model of a dataset  which takes into account its spatial properties:
+in particular, adjacent points with similar properties are grouped together.
 In general, when building a statistical model one tries to find a reasonable 
 trade off between two 
 features of it: its goodness of fit and its complexity.
@@ -140,7 +140,7 @@ likelihood consequent to the merging is compensated
 by the reduction in complexity achieved by it.
 
 The likelihood of a block is defined as follows: if the
-segment coincides with a single locus, one has
+segment coincides with a single locus $i$, one has
 
 \begin{equation}
 \lik_i=\log {\overline{n}_i+n_i \choose \overline{n}_i} +
