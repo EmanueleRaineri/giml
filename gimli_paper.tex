@@ -26,11 +26,6 @@ A segmentation joins adjacent position
 which have similar properties, while the boundary between segments 
 indicates more or less abrupt changes
 in the signal which might relate to biological mechanisms. 
-For example
-a drop in methylation in a promoter area is is some cases associated with 
-transcriptional activity of the corresponding gene; 
-segments with intermediate values might be related to imprinted regions; 
-and so on and so forth.
 One salient aspects which must be considered when it comes to 
 analyzing methylation dataset is that this epigenetic mark seems 
 to have effect at various genomic scales 
@@ -60,7 +55,7 @@ to build compressed representations of the methylation data in which contiguous 
 are collected into segments.
 This local correlation has been observed many times ( for example
 in the Bsmooth paper \cite{bsmooth}) and is confirmed by 
-figure~\ref{corr}. 
+figure~\ref{fig1}. 
 %which I computed 
 %first selecting at random $10^6$ pairs of  methylated loci; then binning
 %them according to the distance between the members of the pair (I considered 20 
@@ -70,7 +65,7 @@ figure~\ref{corr}.
 %across the pairs contained in it. 
 
 \begin{center}
-\begin{figure}\label{corr}
+\begin{figure}\label{fig1}
 \includegraphics[width=7cm,angle=270]{out.correla.eps}
 \caption{This plot is produced by extracting $1$ million random pairs of CpG loci;
 storing the pairs in $20$ different bins  according to the distance between the members
@@ -81,13 +76,12 @@ using the pairs contained in it.}
 
 Another interesting aspect of methylation is that it possesses some sort of scale 
 invariance: variations can be observed both at the level of a single promoter
-region (hundred of bases, see for example XXXmethylseekR paperXXX) and when looking at stretches
+region (hundred of bases, see for example \cite{methylseekr}) and when looking at stretches
 of millions of bases (\cite{largeblocks} ).
-This brings about contrasting requirements when analyzing this kind of data: a rough
+This brings about contrasting requirements when analyzing this kind of data: large scale (slow) changes are 
+significant and must be looked at, but a rough
 running average with a window of many megabases might destroy interesting
-local detail, but at the same time large scale (slow) changes are also
-significant and must be looked at.
-I present  a software (\gimli) which computes a multiscale segmentation 
+local detail. Here I present  a software (\gimli) which computes a multiscale segmentation 
 of DNA methylation 
 data acquired through WGBS and helps making sense of the data and compare 
 it across samples.
@@ -96,7 +90,7 @@ A segmentation is a statistical model of a dataset  which takes into account its
 in particular, adjacent points with similar properties are grouped together.
 In general, when building a statistical model one tries to find a reasonable 
 trade off between two 
-features of it: its goodness of fit and its complexity.
+features  its goodness of fit and its complexity.
 In our case these two aspects have a very simple interpretation : both the goodness 
 of fit and the complexity increase with the number of segments $N_S$ used to describe the 
 methylation data.  
@@ -119,7 +113,7 @@ both a single CpG or a set of contiguous CpGs ) indexed by $j=1,\dots,N$
 decent coverage one has $N \approx 2\times 10^6$).
 
 The output is a set of blocks 
-covering the genome 
+covering the initial positions 
 such that each block contains CpGs which are similarly
 methylated. The strength with which
 one imposes the similarity constraint
@@ -128,7 +122,7 @@ is controlled by a coarseness parameter $\lambda$.
 Internally \texttt{gimli} mantains a list of the current  
 segments (indexed by $i=1,\dots,N_S$), 
 which at the beginning 
-coincides with the separate methylated positions 
+coincides with the loci given in input. 
 ( i.e.  $N_S=N$ and each block has length $1$). 
 
 The way the program works is by 
@@ -159,10 +153,10 @@ and
 is the maximum likelihood estimation for the parameter of the binomial process 
 which generates $\overline{n}_i$.
 
-If (more in general) a block contains  more than a single CpG  
+If a block contains  more than a single CpG  
 ( think for concreteness of a segment which includes all the positions from 
 $j_1$ to $j_2$ ) $\lik$ is 
-computed as in equation (\ref{loglik}) but for the fact that $\hat{\theta}$ is now
+computed in a similar way in equation (\ref{loglik}) but for the fact that $\hat{\theta}$ is now
 defined as :
 
 \[
@@ -181,7 +175,9 @@ and
 n=\sum_{j=j_1}^{j_2} n_j
 \]
 
-The total likelihood of the segmentation is given by 
+and the likelihood of the segment is the sum of the likelihood of the loci contained in it.
+
+The total likelihood of the segmentation is in turn given by 
 $\mathcal{L}=\sum_i\mathcal{L}_i$.
 
 The loss in 
@@ -209,13 +205,17 @@ merge any more pair of adjacent segments; in this case depending on what the
 user wants it can either increment $\lambda$ and try again, 
 or give up, print the segmentation and exit.
 
-The above definitions are in part   is conceptually the same as the one
+The above procedure is similar to the one
 described in the context of copy number variation detection in \cite{vega} 
 ( which, in turn, us an adaptation 
 of a 2 dimensional image analysis algorithm due to Mumford and Shah, 
-\cite{mumfordshah}) except that my method of measuring goodness of fit, described
-above, differs from theirs (the solution adopted for copy number variation detection
-does not work well with methylation data).
+\cite{mumfordshah}) except that the probabilistic method  described
+here is more suitable for analyzing methylation data. This is because it takes into account the
+uncertainty with which we know the methylation levels. This is higehr when the coverage is low and vice versa.
+This has an effect on the decision of merging adjacent blocks. For example in \ref{fig2} I plot
+$\Delta  \lik$  (vertical axis)for two segments at $\theta=0.8$ and $\theta=0.55$ measured at different read depth
+(horizontal axis).
+
 
 \subsection{sparsity of CpGs}
 

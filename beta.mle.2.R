@@ -6,7 +6,7 @@ var.beta<-function(a,b){
 #co<-rep(4)
 
 nc<-c(5,5)
-co<-c(5,5)
+co<-c(6,5)
 
 make.fn<-function(nc,co){
 	fn<-function(theta){
@@ -55,8 +55,8 @@ cat("mm-a:",mm[1],"\tmm-b:",mm[2],"\n");
 
 make.pab<-function(nc,co){
 	pab<-function(a,b){
-		v<-gamma(a+b)/(gamma(a)*gamma(b))*(gamma(a+nc)*gamma(b+co))/gamma(a+b+nc+co)
-		(a+b)^-0.5*prod(v)
+		v<-gamma(a+b)/(gamma(a)*gamma(b))*gamma(a+nc)*gamma(b+co)/gamma(a+b+nc+co)
+		prod(v)
 	}
 	pab	
 }
@@ -64,9 +64,33 @@ pab<-make.pab(nc,co)
 ma<-0;mb<-0;m<--1;
 for(a in 1:50){
 	for(b in 1:50){
-		if (pab(a,b)>=m){
+		if ( pab(a,b) >=m ){
 			ma<-a; mb<-b;
-			m<-pab(a,b)
+			m<-pab(a,b);
+			#cat("new max:",m,"\n");
+		}
+	}
+}
+cat("ma:",ma," mb:",mb,"\n")
+
+p.joint<-function(a,b,theta){
+	dbeta(theta,a,b)*prod(dbinom(nc,size=nc+co,p=theta))
+}
+
+p.marg<-function(a,b){
+	#integrate(f,lower,upper)
+	pdf<-function(theta){
+		p.joint(a,b,theta)
+	}
+	integrate(Vectorize(pdf,vectorize.args='theta'),0,1)$value
+}
+ma<-0;mb<-0;m<--1;
+for(a in 1:50){
+	for(b in 1:50){
+		if ( p.marg(a,b) >=m ){
+			ma<-a; mb<-b;
+			m<-p.marg(a,b);
+			#cat("new max:",m,"\n");
 		}
 	}
 }

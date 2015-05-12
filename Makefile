@@ -3,7 +3,7 @@ PLACE=work
 ifeq ($(PLACE),work)
 BED=/usr/bin
 else
-BED=/Users/emanueleraineri/bedtools2/bin
+BED=/Users/emanueleraineri/bin/bedtools2/bin
 endif
 
 DATA  =~/Desktop/meth_data
@@ -89,13 +89,30 @@ $(DATA)/G199_cpg.chr1.gimli.100.filtered: $(DATA)/G199_cpg.chr1.gimli.100
 $(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
 	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
 
-G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
-	Rscript figure2.R $(DATA)	
 
 gimli1000: $(GIMLI1000)
 
+
+####EPS files####
+figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+
+G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
+	Rscript figure2.R $(DATA)	
+
 boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
 	Rscript make_boxplot1.R $(DATA)
+
+G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.10.200.dmr
+
+G199.G202.100.200.dmr.eps : G199.G202.100.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.100.200.dmr
+
+G199.G202.1000.200.dmr.eps : G199.G202.1000.200.dmr example2.R
+	Rscript example2.R $(DATA) G199.G202.1000.200.dmr
+
+boxplot_example_3.eps : rpkm.vs.met
+	Rscript boxplot_example_3.R	
 
 #example2
 
@@ -111,14 +128,7 @@ G199.G202.1000.200.dmr : $(DATA)/G199_cpg.chr1.gimli.1000  $(DATA)/G202_cpg.chr1
 
 #
 
-G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.10.200.dmr
 
-G199.G202.100.200.dmr.eps : G199.G202.100.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.100.200.dmr
-
-G199.G202.1000.200.dmr.eps : G199.G202.1000.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.1000.200.dmr
 
 
 ###example 3###
@@ -138,12 +148,9 @@ C004GD51_cpg.chr1.gimli.tss.filtered.bed : filter.tss.gimli.py $(DATA)/C004GD51_
 rpkm.vs.met : join.tss.rpkm.py C004GD51_cpg.chr1.gimli.tss.filtered.bed C004GD12.rpkm
 	python join.tss.rpkm.py > $@ 
 
-boxplot_example_3.eps : rpkm.vs.met
-	Rscript boxplot_example_3.R	
 
 ############################
 
-figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
 
 gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 	latex gimli_paper.tex
