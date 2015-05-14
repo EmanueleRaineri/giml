@@ -20,8 +20,6 @@
 In this paper, I show one efficient way of computing 
 segmentations of methylation values determined by 
 whole genome bisulfite sequencing
-(hence inferred from the number of converted and non converted reads 
-at each position).  
 A segmentation joins adjacent position
 which have similar properties, while the boundary between segments 
 indicates more or less abrupt changes
@@ -47,9 +45,8 @@ order to direct further analysis (i.e. regions with stark variations in the sign
 Whole genome Bisulfite sequencing (WGBS) allows measurements of methylation 
 status with single base resolution across an entire genome. We now know,
 thanks to WGBS and other techniques,  
-that the human genome contains a few loci corresponding to sudden changes in methylation 
-and many more regions where this epigenetic mark has a strong local
-correlation, in the sense the the methylation status at one position predicts 
+that this epigenetic mark has a strong local correlation,
+in the sense the the methylation status at one position predicts 
 very well the levels nearby; this suggests that it should be possible
 to build compressed representations of the methylation data in which contiguous loci 
 are collected into segments.
@@ -95,9 +92,9 @@ In our case these two aspects have a very simple interpretation : both the goodn
 of fit and the complexity increase with the number of segments $N_S$ used to describe the 
 methylation data.  
 At one extreme, representing the complete dataset with one big segment would 
-give a very simple model with the worst possible fit and 
-at the other using many segments of length $1$ would give us a perfectly 
-fitting but very complex summary of the data.
+give a very simple model with, but likely a very bad fit;  
+at the other using many segments of length $1$ would give us typically
+a well fitting but very complex summary of the data.
 The complexity of the model is linked to the typical scale of the segments used
 in the sense that if the typical block is very long one needs few of them to 
 cover the genomic region under consideration.
@@ -175,7 +172,6 @@ and
 n=\sum_{j=j_1}^{j_2} n_j
 \]
 
-and the likelihood of the segment is the sum of the likelihood of the loci contained in it.
 
 The total likelihood of the segmentation is in turn given by 
 $\mathcal{L}=\sum_i\mathcal{L}_i$.
@@ -188,13 +184,13 @@ adjacent segments in one single block is:
 
 where $\mathcal{L}_{i,i+1}$ is the likelihood of a segment which includes
 all the loci in segments $i$ and $i+1$.
-notice that it can be  $\mathcal{L}_{i,i+1} \leq \mathcal{L}_i+\mathcal{L}_{i+1}$ and hence merging  
+Notice that it can be  $\mathcal{L}_{i,i+1} \leq \mathcal{L}_i+\mathcal{L}_{i+1}$ and hence merging  
 can introduce a loss in total 
 likelihood. This loss is counterbalanced, though, by the fact the the number 
 of segments decreases by $1$. To take into account this decrease in 
 complexity we consider an adjusted likelihood change:
 
-$\Delta  \lik = -\mathcal{L}_i-\mathcal{L}_{i+1}+\mathcal{L}_{i,i+1} + \lambda$.
+\[\Delta  \lik = -\mathcal{L}_i-\mathcal{L}_{i+1}+\mathcal{L}_{i,i+1} + \lambda\]
 
 Once it has computed 
 $\Delta  \lik$ for all $i$, the algorithm selects the maximum 
@@ -211,7 +207,7 @@ described in the context of copy number variation detection in \cite{vega}
 of a 2 dimensional image analysis algorithm due to Mumford and Shah, 
 \cite{mumfordshah}) except that the probabilistic method  described
 here is more suitable for analyzing methylation data. This is because it takes into account the
-uncertainty with which we know the methylation levels. This is higehr when the coverage is low and vice versa.
+uncertainty with which we know the methylation levels. This is higher when the coverage is low and vice versa.
 This has an effect on the decision of merging adjacent blocks. For example in \ref{fig2} I plot
 $\Delta  \lik$  (vertical axis)for two segments at $\theta=0.8$ and $\theta=0.45$ measured at different read depth
 (horizontal axis).
@@ -220,8 +216,6 @@ $\Delta  \lik$  (vertical axis)for two segments at $\theta=0.8$ and $\theta=0.45
 \includegraphics[width=7cm]{fig2.eps}
 \caption{$\Delta  \lik$ at fixed methylation difference depends on read depth.}
 \end{figure}
-
-
 
 
 \subsection{sparsity of CpGs}
@@ -241,6 +235,19 @@ Hence the final expression for the adjusted likelihood change is :
 \begin{equation}
 \Delta \lik = \rho ( -\mathcal{L}_i-\mathcal{L}_{i+1}+\mathcal{L}_{i,i+1} )  +\lambda
 \end{equation}
+
+
+\subsection{some preliminary results}
+
+First of all I check that the results of the algorithm are reasonable.
+In particular, at any given length I want the segments created by gimli to have lower methylation
+variability than random segments of the same length extracted from the input dataset. This is the content of
+\ref{fig3}.
+
+\begin{figure}\label{fig3}
+\includegraphics[width=7cm]{fig3.eps}
+\caption{}
+\end{figure}
 
 I can now refine quantitatively the assertion that the complexity of the model
 is linked to the typical lengths of the segments : as figure \ref{boxplot1} 
@@ -264,9 +271,31 @@ accordance with the description
 given in this paper, the purpose of \gimli is to help 
 detect automatically interesting
 biological patterns in methylation data, and this can't be tested in any 
-precise sense. To show that \gimli is a useful tool
+precise sense. To show that \gimli{} is a useful tool
 though, I will give $4$ examples of analyses which can be produced very quickly
 using it. 
+
+\subsection{Breakpoints}
+
+First I'll show how the boundary of the segments, also known as the breakpoints
+can correspond to landmarks in the genome. To this purpose, I considered the (publicly available)
+Blueprint samples \verb=C000S5A1bs=,\verb=C0010KA2bs=,\verb=C001UYA3bs= and \verb=C004SQ51=.
+I computed their segmentation for $\lambda=10$ and looked for all the triples of consecutive segments
+where 
+\begin{itemize}
+\item{} the minimum value of the first segment is bigger than $0.25$ plus the maximum vaule
+of the second segment and
+\item{} the maximum value of the second segment is less than the minimum value of the third
+segment minus $0.25$ and
+\item{} all the segments contain at least $5$ CpGs.
+\item{} they must appear in all the 4 samples
+\end{itemize}
+
+(if the above list seems incomprehensible, an example of such segments is in figXXX).
+
+
+In this way I obtain $143$ such triplets
+
 
 \subsection{visualization}
 

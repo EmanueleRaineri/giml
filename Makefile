@@ -93,7 +93,7 @@ $(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
 gimli1000: $(GIMLI1000)
 
 
-
+#fig2
 
 delta.vs.cov.txt: cov.effect.R
 	Rscript cov.effect.R > delta.vs.cov.txt
@@ -106,7 +106,21 @@ delta.vs.cov.mean.txt : delta.vs.cov.txt
 fig2.eps: delta.vs.cov.gp
 	gnuplot < $^
 
-figures: out.correla.eps fig2.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+
+#fig3
+random_mean_var_le15.txt: $(DATA)/G199_cpg.chr1.txt.gz
+	zcat $^ | ocaml str.cma random.cpgs.ml > $@
+
+
+gimli_mean_var_le15.txt : $(DATA)/G199_cpg.chr1.gimli.gz
+		zcat /home/emanuele/Desktop/meth_data/G199_cpg.chr1.gimli.gz | awk '$$4=15' | awk 'BEGIN{c=0}{if (rand()>0.1) {c=c+1; print $$0;}; if (c==10000) exit 0}' | awk '{print $$2"\t"$$3"\t"$$8"\t"$$9}' > $@
+
+fig3.eps: random.vs.gimli.gp
+	gnuplot < random.vs.gimli.gp
+
+####
+
+figures: out.correla.eps fig2.eps fig3.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
 
 G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
 	Rscript figure2.R $(DATA)	
