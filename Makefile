@@ -93,8 +93,20 @@ $(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
 gimli1000: $(GIMLI1000)
 
 
-####EPS files####
-figures: out.correla.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+
+
+delta.vs.cov.txt: cov.effect.R
+	Rscript cov.effect.R > delta.vs.cov.txt
+
+
+delta.vs.cov.mean.txt : delta.vs.cov.txt
+	cat $^  | datamash -g 1 mean 5 sstdev 5 > $@
+
+
+fig2.eps: delta.vs.cov.gp
+	gnuplot < $^
+
+figures: out.correla.eps fig2.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
 
 G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
 	Rscript figure2.R $(DATA)	
