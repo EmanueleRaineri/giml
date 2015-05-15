@@ -250,16 +250,16 @@ variability than random segments of the same length extracted from the input dat
 \end{figure}
 
 I can now refine quantitatively the assertion that the complexity of the model
-is linked to the typical lengths of the segments : as figure \ref{boxplot1} 
+is linked to the typical lengths of the segments : as figure \ref{fig4} 
 shows the median length of the blocks increases with $\lambda$. This is 
-accompanied by a decrease in likelihood of the segments (\ref{boxplot2})
+accompanied by a decrease in likelihood of the segments (\ref{fig5})
 
-\begin{figure}\label{boxplot1}
+\begin{figure}\label{fig4}
 \includegraphics[width=7cm,angle=270]{boxplot1.eps}
 \caption{Median length of blocks is higher at higher $\lambda$s.}
 \end{figure}
 
-\begin{figure}\label{boxplot2}
+\begin{figure}\label{fig5}
 \includegraphics[width=7cm,angle=270]{boxplot2.eps}
 \caption{Likelihood of blocks diminishes with $\lambda$.}
 \end{figure}
@@ -279,7 +279,7 @@ using it.
 
 First I'll show how the boundary of the segments, also known as the breakpoints
 can correspond to landmarks in the genome. To this purpose, I considered the (publicly available)
-Blueprint samples \verb=C000S5A1bs=,\verb=C0010KA2bs=,\verb=C001UYA3bs= and \verb=C004SQ51=.
+$4$ Blueprint monocytes \verb=C000S5A1bs=,\verb=C0010KA2bs=,\verb=C001UYA3bs= and \verb=C004SQ51= 
 I computed their segmentation for $\lambda=10$ and looked for all the triples of consecutive segments
 where 
 \begin{itemize}
@@ -291,108 +291,111 @@ segment minus $0.25$ and
 \item{} they must appear in all the 4 samples
 \end{itemize}
 
-(if the above list seems incomprehensible, an example of such segments is in figXXX).
+These conditions correspond to regions where the methylation goes from high to low to high again.
+See for example \ref{fig6} 
+
+In this way I obtain $143$ such triplets. Looking at their central segmentes
+(those in a comparatively low methylation states) I find that their median length is
+$252$bp (minimum length $39$, maximum $252$). When I intersect this central segments with the Blueprint
+annotation, I find than $94$ overlap a known transcript, suggesting that regions with stark 
+changes in methylation
+might sistematically correspond to regulated partos of the genome.
 
 
-In this way I obtain $143$ such triplets
 
+%\subsection{visualization}
 
-\subsection{visualization}
+%In figure \ref{ex1} I plotted the methylation in blocks (with $\lambda=1000$) 
+%across a region of $1$ for $2$ Blueprint samples
+%(G199,G202), together with the raw data.  Although some segments
+%correspond to variable strectches, the reduction in complexity achieved by \gimli makes it 
+%possible to observe some relevant signal by eye (in this case there is 
+%an apparent loss of methylation across the $2$ samples, which are different 
+%stages in the hematopoietic process).
 
-In figure \ref{ex1} I plotted the methylation in blocks (with $\lambda=1000$) 
-across a region of $1$ for $2$ Blueprint samples
-(G199,G202), together with the raw data.  Although some segments
-correspond to variable strectches, the reduction in complexity achieved by \gimli makes it 
-possible to observe some relevant signal by eye (in this case there is 
-an apparent loss of methylation across the $2$ samples, which are different 
-stages in the hematopoietic process).
+%\begin{figure}\label{ex1}
+%\includegraphics[width=10cm,angle=270]{G199.G200.G201.G202.chr1.gimli.eps}
+%\caption{output of \gimli, for $\lambda=1000$ for two Blueprint samples. The loss of
+%methylation is clearly visible.}
+%\end{figure}
 
-\begin{figure}\label{ex1}
-\includegraphics[width=10cm,angle=270]{G199.G200.G201.G202.chr1.gimli.eps}
-\caption{output of \gimli, for $\lambda=1000$ for two Blueprint samples. The loss of
-methylation is clearly visible.}
-\end{figure}
+%\subsection{comparison across samples (DMRs)}
 
-\subsection{comparison across samples (DMRs)}
+%\gimli  makes it easy to find regions which have different 
+%methylations across samples. One needs to find segments 
+%from the first and the second batch which intersect spatially
+%but correspond to non overlapping intervals of methylation 
+%(the maximum value of one 
+%segment is less than the minimum of the other).
 
-\gimli  makes it easy to find regions which have different 
-methylations across samples. One needs to find segments 
-from the first and the second batch which intersect spatially
-but correspond to non overlapping intervals of methylation 
-(the maximum value of one 
-segment is less than the minimum of the other).
+%Users can fine tune this procedure according to what exactly they 
+%are looking for, taking into account that a standard deviation of $0.2$
+%on the methylation measurements done with WGBS is not unusual, hence
+%DMRs must be substantially separated to avoid confusion with sampling error.
 
-Users can fine tune this procedure according to what exactly they 
-are looking for, taking into account that a standard deviation of $0.2$
-on the methylation measurements done with WGBS is not unusual, hence
-DMRs must be substantially separated to avoid confusion with sampling error.
+%Also notice that I am not giving any algorithm to compute $p$-values
+%or anything of the sort; first of all the credibility of each segment
+%is measured by its log likelihood; secondly users can choose statistical
+%tests suited to the specific signal (and the specific scale)
+%they are considering.
 
-Also notice that I am not giving any algorithm to compute $p$-values
-or anything of the sort; first of all the credibility of each segment
-is measured by its log likelihood; secondly users can choose statistical
-tests suited to the specific signal (and the specific scale)
-they are considering.
+%\begin{figure}\label{ex1}
+%\includegraphics[width=10cm,angle=270]{G199.G202.100.200.dmr.eps}
+%\caption{Differentially methylated regions : I considered segments 
+%(found setting $\lambda=100$) longer than $200$bp 
+%corresponding to
+%non overlapping intervals of methylation values (ie the maximum value of one 
+%segment is less than the minimum of the other).}
+%\end{figure}
 
-\begin{figure}\label{ex1}
-\includegraphics[width=10cm,angle=270]{G199.G202.100.200.dmr.eps}
-\caption{Differentially methylated regions : I considered segments 
-(found setting $\lambda=100$) longer than $200$bp 
-corresponding to
-non overlapping intervals of methylation values (ie the maximum value of one 
-segment is less than the minimum of the other).}
-\end{figure}
+%\subsection{comparison with other kind of data}
 
-\subsection{comparison with other kind of data}
+%Many dataset in genomics are naturally expressed as segments. The
+%fact that \gimli also generates annotated blocks allows one to
+%integrate methylation data with other kind of information easily
+%using such packages as, for instance, \texttt{bedtools} (XXX).
 
-Many dataset in genomics are naturally expressed as segments. The
-fact that \gimli also generates annotated blocks allows one to
-integrate methylation data with other kind of information easily
-using such packages as, for instance, \texttt{bedtools} (XXX).
+%As an example, I consider the set of $5227$ transcription start sites
+%(TSSes) on human chromosome $1$. I infer the TSSes from a list of 
+%regions used for gene expression quantification by the Blueprint 
+%consortium. For each of them, I also consider the RPKM of the corresponding
+%gene in the sample $C004GD$. I then compute with \gimli the segmentation
+%of the methylation measurements for chromosome $1$ of $C004GD$.
 
-As an example, I consider the set of $5227$ transcription start sites
-(TSSes) on human chromosome $1$. I infer the TSSes from a list of 
-regions used for gene expression quantification by the Blueprint 
-consortium. For each of them, I also consider the RPKM of the corresponding
-gene in the sample $C004GD$. I then compute with \gimli the segmentation
-of the methylation measurements for chromosome $1$ of $C004GD$.
+%My intent is to show that the segments overlapping the TSSs
+%say something about the transcriptional activity of the nearby gene.
+%Accordingly,
+%I use \texttt{bedtools} to intersect the list of blocks produced by \gimli
+%with the list of transcription start sites; since more than one \gimli
+%block can overlap a given TSS (blocks with different $\lambda$s can 
+%cover the same region) I choose the largest segment covering the TSS
+%with the constraint thet the maximum and minimum value of methylation
+%in the block must not differ by more than $0.3$.
 
-My intent is to show that the segments overlapping the TSSs
-say something about the transcriptional activity of the nearby gene.
-Accordingly,
-I use \texttt{bedtools} to intersect the list of blocks produced by \gimli
-with the list of transcription start sites; since more than one \gimli
-block can overlap a given TSS (blocks with different $\lambda$s can 
-cover the same region) I choose the largest segment covering the TSS
-with the constraint thet the maximum and minimum value of methylation
-in the block must not differ by more than $0.3$.
+%I then compare the distribution of RPKMs for genes corresponding
+%to TSS covered by segments with $\hat{\theta}<0.5$ with the same distribution
+%for genes adjacent to TSS covered by blocks with $\hat{\theta} \geq 0.5$
 
-I then compare the distribution of RPKMs for genes corresponding
-to TSS covered by segments with $\hat{\theta}<0.5$ with the same distribution
-for genes adjacent to TSS covered by blocks with $\hat{\theta} \geq 0.5$
+%\begin{figure}\label{ex3}
+%\includegraphics[width=7cm,angle=270]{boxplot_example_3.eps}
+%\caption{Segments with different $\hat{\theta}$ overlapping the TSS correspond
+%to different distribution of the RPKMs of the corresponding genes.}
+%\end{figure}
 
-\begin{figure}\label{ex3}
-\includegraphics[width=7cm,angle=270]{boxplot_example_3.eps}
-\caption{Segments with different $\hat{\theta}$ overlapping the TSS correspond
-to different distribution of the RPKMs of the corresponding genes.}
-\end{figure}
+%\subsection{Demarcation of unusual regions} 
 
-\subsection{Demarcation of unusual regions} 
+%Next I used \gimli  to look for regions where the 
+%methylation
+%ratio goes from high to low and to high again.
 
-Next I used \gimli  to look for regions where the 
-methylation
-ratio goes from high to low and to high again.
+%In chromosome $1$ of G199, $972$ such intervals intersect one (or more) 
+%TSSes. I haven't annotated the remaining ones, but in my view they constitute
+%an interesting pattern to look at.
 
-In chromosome $1$ of G199, $972$ such intervals intersect one (or more) 
-TSSes. I haven't annotated the remaining ones, but in my view they constitute
-an interesting pattern to look at.
+\section{Implementation}
 
-\section{implementation}
-
-\gimli is written in \texttt{C}, and the source
-dode is available from the github page of the author. Together
-with \gimli I also distribute \texttt{libgimli.R},
-a set of R functions which can be used to produce plots and statistical
-analyses based on \gimli's output.
+\gimli{} is written in \texttt{C}, and the source
+dode is available from the github page of the author. 
 
 \bibliography{gimli_paper}
 \bibliographystyle{plain}
