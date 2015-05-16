@@ -291,7 +291,8 @@ segment minus $0.25$ and
 \item{} they must appear in all the 4 samples
 \end{itemize}
 
-These conditions correspond to regions where the methylation goes from high to low to high again.
+These conditions correspond to regions where the methylation goes from high to low to high again,
+in jumps of at least $0.25$.
 See for example \ref{fig6} 
 
 In this way I obtain $143$ such triplets. Looking at their central segmentes
@@ -299,8 +300,12 @@ In this way I obtain $143$ such triplets. Looking at their central segmentes
 $252$bp (minimum length $39$, maximum $252$). When I intersect this central segments with the Blueprint
 annotation, I find than $94$ overlap a known transcript, suggesting that regions with stark 
 changes in methylation
-might sistematically correspond to regulated partos of the genome.
+might sistematically correspond to regulated parts of the genome.
 
+\begin{figure}\label{fig6}
+\includegraphics[width=7cm]{fig6.eps}
+\caption{An example of high-low-high pattern found in chromosome $1$ by \gimli{}}
+\end{figure}
 
 
 %\subsection{visualization}

@@ -1,3 +1,5 @@
+set term postscript eps solid enhanced color
+set output "fig6.eps"
 set xra[1655618-4000:1656083+4000]
 set yrange[-0.1:1.1]
 unset key

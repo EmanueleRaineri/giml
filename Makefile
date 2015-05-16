@@ -1,4 +1,4 @@
-PLACE=work
+PLACE=home
 
 ifeq ($(PLACE),work)
 BED=/usr/bin
@@ -118,9 +118,14 @@ gimli_mean_var_le15.txt : $(DATA)/G199_cpg.chr1.gimli.gz
 fig3.eps: random.vs.gimli.gp
 	gnuplot < random.vs.gimli.gp
 
+
+#fig6
+fig6.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.1656083.txt C001UYA3bs_cpg.chr1.1655618.1656083.txt C004SQ51_cpg.chr1.1655618.1656083.txt plot_jumps.gp
+	gnuplot < plot_jumps.gp
+
 ####
 
-figures: out.correla.eps fig2.eps fig3.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+figures: out.correla.eps fig2.eps fig3.eps fig6.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
 
 G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
 	Rscript figure2.R $(DATA)	
