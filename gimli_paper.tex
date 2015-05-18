@@ -101,7 +101,7 @@ cover the genomic region under consideration.
 
 \section{The algorithm}
 
-The  input to \texttt{gimli} is a set of $N$ methylated positions 
+The  input to \gimli{} is a set of $N$ methylated positions 
 (CpGs or not, although I will refer to CpGs in the rest of the paper; also in what
 follows I will call {\em block} or ,
 equivalently, {\em segment}
@@ -116,7 +116,7 @@ methylated. The strength with which
 one imposes the similarity constraint
 is controlled by a coarseness parameter $\lambda$.
 
-Internally \texttt{gimli} mantains a list of the current  
+Internally \gimli{} mantains a list of the current  
 segments (indexed by $i=1,\dots,N_S$), 
 which at the beginning 
 coincides with the loci given in input. 
@@ -226,7 +226,7 @@ between adjacent sites.
 To avoid building segments which span long regions where no CpGs exist, one 
 can multiply the difference in likelihoods by a sigmoidal penalty term of the
 form \[\rho=\frac{D1}{1+\exp(-D_{i,i+1}/D0)}-\frac{D_1}{2}+1\] where $D_{i,i+1}$ is the distance 
-between the the rigth end of segment $i$ and the left end of segment $i+1$ and 
+between the the right end of segment $i$ and the left end of segment $i+1$ and 
 $D_0,D_1$ are constants which (looking at figure \ref{corr}) can be reasonably 
 set to $D_0=10000,D_1=100$. 
 
@@ -246,7 +246,8 @@ variability than random segments of the same length extracted from the input dat
 
 \begin{figure}\label{fig3}
 \includegraphics[width=7cm]{fig3.eps}
-\caption{}
+\caption{Variance across segments of $15$ contiguous CpGs when chosen at random or 
+computed with \gimli{}. Methylation values from }
 \end{figure}
 
 I can now refine quantitatively the assertion that the complexity of the model
@@ -275,7 +276,13 @@ precise sense. To show that \gimli{} is a useful tool
 though, I will give $4$ examples of analyses which can be produced very quickly
 using it. 
 
-\subsection{Breakpoints}
+
+
+\subsection{visualization}
+
+very variable segments, very short segments, very long segments.
+
+\subsection{Jumps}
 
 First I'll show how the boundary of the segments, also known as the breakpoints
 can correspond to landmarks in the genome. To this purpose, I considered the (publicly available)
@@ -306,6 +313,40 @@ might sistematically correspond to regulated parts of the genome.
 \includegraphics[width=7cm]{fig6.eps}
 \caption{An example of high-low-high pattern found in chromosome $1$ by \gimli{}}
 \end{figure}
+
+\subsection{Differentially methylated regions}
+
+Gimli can be used to catch differentially methylated regions across pair of samples
+or pair of groups of samples.
+
+As an example, we consider on one side the 
+first we consider all the positions where at least one of the samples has been measured
+(WGBS loses positions dependeing on the vagaries of the high t sequencing: each sample
+is usually measured ina slightly different set of positions).
+
+Then we summarize the counts by first transofrming them in an array of estimated methylation
+values and then finding (by moment matching) a beta distribution which fits them.
+
+The parameters of the Beta distribution can be interpreted as counts of 
+a non converted and converted reads of the experiment giving the same methylation mean 
+and variance as a maximum likelihood estimation from the available samples.
+
+This trick allows me to convert a group of samples in a set of counts suitable to be gi
+ven as input to \gimli{}.
+
+To find the differentially methylated regions, I start by intersecting
+( with bedtools\cite{bedtools} ) the segmentation computed for the first group
+with the segmentation of the second : whenever two segments intersect I look
+for the ratio between the difference in average methylation in the common area 
+and the square root of the sum of the variances of the two samples; one can then
+do a t-test.
+
+To tue purpose of illustrating how it might work I plot here a DMR 
+fromt the file mono.M0.l10.dmr  (coordinates :chr1	542310	544910).
+
+Advantage : we don't need multiple samples per group, hence useful to control
+replicates.
+
 
 
 %\subsection{visualization}

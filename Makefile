@@ -93,7 +93,7 @@ $(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
 gimli1000: $(GIMLI1000)
 
 
-#fig2
+#fig2 effects of coverage on likelihood
 
 delta.vs.cov.txt: cov.effect.R
 	Rscript cov.effect.R > delta.vs.cov.txt
@@ -107,7 +107,8 @@ fig2.eps: delta.vs.cov.gp
 	gnuplot < $^
 
 
-#fig3
+#fig3 random segments vs gimli segments
+
 random_mean_var_le15.txt: $(DATA)/G199_cpg.chr1.txt.gz
 	zcat $^ | ocaml str.cma random.cpgs.ml > $@
 
@@ -119,7 +120,7 @@ fig3.eps: random.vs.gimli.gp
 	gnuplot < random.vs.gimli.gp
 
 
-#fig6
+#fig6 jump
 fig6.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.1656083.txt C001UYA3bs_cpg.chr1.1655618.1656083.txt C004SQ51_cpg.chr1.1655618.1656083.txt plot_jumps.gp
 	gnuplot < plot_jumps.gp
 
