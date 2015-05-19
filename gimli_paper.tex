@@ -225,10 +225,20 @@ introduced by the sequencing process usually increases the distance
 between adjacent sites.
 To avoid building segments which span long regions where no CpGs exist, one 
 can multiply the difference in likelihoods by a sigmoidal penalty term of the
-form \[\rho=\frac{D1}{1+\exp(-D_{i,i+1}/D0)}-\frac{D_1}{2}+1\] where $D_{i,i+1}$ is the distance 
+form \[\rho=\frac{D1}{1+\exp(-D_{i,i+1}/D0)}-\frac{D_1}{2}+1\] (see \ref{figrho}) 
+where $D_{i,i+1}$ is the distance 
 between the the right end of segment $i$ and the left end of segment $i+1$ and 
 $D_0,D_1$ are constants which (looking at figure \ref{corr}) can be reasonably 
 set to $D_0=10000,D_1=100$. 
+
+\begin{figure}\label{figrho}
+\includegraphics[width=7cm]{figrho.eps}
+\caption{Empirical penalty factor \rho}
+\end{figure}
+
+
+
+
 
 Hence the final expression for the adjusted likelihood change is :
 
@@ -276,11 +286,10 @@ precise sense. To show that \gimli{} is a useful tool
 though, I will give $4$ examples of analyses which can be produced very quickly
 using it. 
 
-
-
 \subsection{visualization}
 
 very variable segments, very short segments, very long segments.
+
 
 \subsection{Jumps}
 
@@ -290,7 +299,7 @@ $4$ Blueprint monocytes \verb=C000S5A1bs=,\verb=C0010KA2bs=,\verb=C001UYA3bs= an
 I computed their segmentation for $\lambda=10$ and looked for all the triples of consecutive segments
 where 
 \begin{itemize}
-\item{} the minimum value of the first segment is bigger than $0.25$ plus the maximum vaule
+\item{} the minimum value of the first segment is bigger than $0.25$ plus the maximum value
 of the second segment and
 \item{} the maximum value of the second segment is less than the minimum value of the third
 segment minus $0.25$ and
@@ -316,7 +325,13 @@ might sistematically correspond to regulated parts of the genome.
 
 \subsection{Differentially methylated regions}
 
-Gimli can be used to catch differentially methylated regions across pair of samples
+For the DMRs I considered the following samples:
+
+
+monocytes: C000S5A1bs,C0010KA2bs,C004SQ51,C005PS51,S000RD54,S007G756
+M0 macrophages: C005VG51,S001S751,S0039051,S00BHQ51,S00DVR51
+
+\gimli{} can be used to catch differentially methylated regions across pair of samples
 or pair of groups of samples.
 
 As an example, we consider on one side the 
@@ -324,7 +339,7 @@ first we consider all the positions where at least one of the samples has been m
 (WGBS loses positions dependeing on the vagaries of the high t sequencing: each sample
 is usually measured ina slightly different set of positions).
 
-Then we summarize the counts by first transofrming them in an array of estimated methylation
+Then we summarize the counts by first transforming them in an array of estimated methylation
 values and then finding (by moment matching) a beta distribution which fits them.
 
 The parameters of the Beta distribution can be interpreted as counts of 
@@ -346,8 +361,6 @@ fromt the file mono.M0.l10.dmr  (coordinates :chr1	542310	544910).
 
 Advantage : we don't need multiple samples per group, hence useful to control
 replicates.
-
-
 
 %\subsection{visualization}
 
