@@ -236,10 +236,6 @@ set to $D_0=10000,D_1=100$.
 \caption{Empirical penalty factor \rho}
 \end{figure}
 
-
-
-
-
 Hence the final expression for the adjusted likelihood change is :
 
 \begin{equation}
@@ -357,10 +353,13 @@ and the square root of the sum of the variances of the two samples; one can then
 do a t-test.
 
 To tue purpose of illustrating how it might work I plot here a DMR 
-fromt the file mono.M0.l10.dmr  (coordinates :chr1	542310	544910).
+fromt the file mono.M0.l10.dmr  (coordinates :chr5	28927763	28928071).
 
 Advantage : we don't need multiple samples per group, hence useful to control
 replicates.
+
+
+
 
 %\subsection{visualization}
 
@@ -455,6 +454,13 @@ replicates.
 
 \gimli{} is written in \texttt{C}, and the source
 dode is available from the github page of the author. 
+On a Pentium(R) Dual-Core  CPU (\texttt{E5400@2.70GHz})
+with $2048$ KB of cache it takes $\approx 840s$ to process the 
+methylation levels of the sample C001UYA3bs ($23815993$ CpGs) 
+with $4$ different $\lambda$s ($1,10,100$ and $1000$).
+This includes the time for decompressing the input file and selecting some of its columns
+with \texttt{awk}.
+
 
 \bibliography{gimli_paper}
 \bibliographystyle{plain}
