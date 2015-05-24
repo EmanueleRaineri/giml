@@ -1,0 +1,17 @@
+dmr<-read.table("~/Desktop/meth_data/mono.M0.l10.dmr.zscore")
+head(dmr)
+dmr.pdf<-density(dmr$V5-dmr$V8)
+plot(dmr.pdf)
+dmr.daniel<-read.table("~/Desktop/meth_data/dmrs_Monocitos-M0_new.formatted.txt")
+head(dmr.daniel)
+dmr.daniel.pdf<-density(dmr.daniel$V4-dmr.daniel$V5)
+plot(dmr.daniel.pdf)
+plot(dmr.daniel.pdf)
+plot(dmr.daniel.pdf)
+lines(dmr.pdf)
+lines(dmr.pdf,col="red")
+plot(dmr.daniel.pdf)
+lines(dmr.pdf,col="red")
+?save
+?savehistory
+savehistory("cmp_daniel.R")
