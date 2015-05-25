@@ -92,6 +92,11 @@ $(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
 
 gimli1000: $(GIMLI1000)
 
+#boxplots
+
+
+fig_boxplot_size.eps fig_boxplot_lik.eps: make_boxplots.R
+	Rscript make_boxplots.R
 
 #fig2 effects of coverage on likelihood
 
@@ -103,8 +108,8 @@ delta.vs.cov.mean.txt : delta.vs.cov.txt
 	cat $^  | datamash -g 1 mean 5 sstdev 5 > $@
 
 
-fig2.eps: delta.vs.cov.gp
-	gnuplot < $^
+fig2.eps: delta.vs.cov.R
+	Rscript $^
 
 
 #fig3 random segments vs gimli segments
@@ -116,19 +121,19 @@ random_mean_var_le15.txt: $(DATA)/G199_cpg.chr1.txt.gz
 gimli_mean_var_le15.txt : $(DATA)/G199_cpg.chr1.gimli.gz
 		zcat /home/emanuele/Desktop/meth_data/G199_cpg.chr1.gimli.gz | awk '$$4=15' | awk 'BEGIN{c=0}{if (rand()>0.1) {c=c+1; print $$0;}; if (c==10000) exit 0}' | awk '{print $$2"\t"$$3"\t"$$8"\t"$$9}' > $@
 
-fig3.eps: random.vs.gimli.gp
-	gnuplot < random.vs.gimli.gp
+fig_variance.eps: random.vs.gimli.R
+	Rscript random.vs.gimli.R
 
 
 #fig6 jump
-fig6.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.1656083.txt C001UYA3bs_cpg.chr1.1655618.1656083.txt C004SQ51_cpg.chr1.1655618.1656083.txt plot_jumps.gp
-	gnuplot < plot_jumps.gp
+fig6.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.1656083.txt C001UYA3bs_cpg.chr1.1655618.1656083.txt C004SQ51_cpg.chr1.1655618.1656083.txt plot_jumps.R
+	Rscript plot_jumps.R
 
 #figrho
-figrho.eps: plot_rho.gp
-	gnuplot < $^
+figrho.eps: plot_rho.R
+	Rscript $^
 
-figures: out.correla.eps figrho.eps fig2.eps fig3.eps fig6.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps boxplot1.eps boxplot2.eps boxplot_example_3.eps
+figures: out.correla.eps figrho.eps fig2.eps fig_variance.eps fig6.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps fig_boxplot_size.eps fig_boxplot_lik.eps boxplot_example_3.eps
 
 G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
 	Rscript figure2.R $(DATA)	
