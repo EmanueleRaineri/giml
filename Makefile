@@ -98,7 +98,6 @@ gimli1000: $(GIMLI1000)
 fig_boxplot_size.eps fig_boxplot_lik.eps: make_boxplots.R
 	Rscript make_boxplots.R
 
-#fig2 effects of coverage on likelihood
 
 delta.vs.cov.txt: cov.effect.R
 	Rscript cov.effect.R > delta.vs.cov.txt
@@ -108,11 +107,11 @@ delta.vs.cov.mean.txt : delta.vs.cov.txt
 	cat $^  | datamash -g 1 mean 5 sstdev 5 > $@
 
 
-fig2.eps: delta.vs.cov.R
-	Rscript $^
+fig_delta_cov.eps: delta.vs.cov.txt delta.vs.cov.R
+	Rscript delta.vs.cov.R
 
 
-#fig3 random segments vs gimli segments
+#fig_variance random segments vs gimli segments
 
 random_mean_var_le15.txt: $(DATA)/G199_cpg.chr1.txt.gz
 	zcat $^ | ocaml str.cma random.cpgs.ml > $@
@@ -133,63 +132,58 @@ fig6.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.16
 figrho.eps: plot_rho.R
 	Rscript $^
 
-figures: out.correla.eps figrho.eps fig2.eps fig_variance.eps fig6.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps fig_boxplot_size.eps fig_boxplot_lik.eps boxplot_example_3.eps
+#figures: out.correla.eps figrho.eps fig2.eps fig_variance.eps fig6.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps fig_boxplot_size.eps fig_boxplot_lik.eps boxplot_example_3.eps
 
-G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
-	Rscript figure2.R $(DATA)	
+figures: out.correla.eps figrho.eps fig_delta_cov.eps fig_variance.eps fig6.eps fig_boxplot_size.eps fig_boxplot_lik.eps 
 
-boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
-	Rscript make_boxplot1.R $(DATA)
+#G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
+#	Rscript figure2.R $(DATA)	
 
-G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.10.200.dmr
+#boxplot1.eps boxplot2.eps : $(DATA)/C004GD51_cpg.chr1.gimli.gz
+#	Rscript make_boxplot1.R $(DATA)
 
-G199.G202.100.200.dmr.eps : G199.G202.100.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.100.200.dmr
+#G199.G202.10.200.dmr.eps : G199.G202.10.200.dmr example2.R
+#	Rscript example2.R $(DATA) G199.G202.10.200.dmr
 
-G199.G202.1000.200.dmr.eps : G199.G202.1000.200.dmr example2.R
-	Rscript example2.R $(DATA) G199.G202.1000.200.dmr
+#G199.G202.100.200.dmr.eps : G199.G202.100.200.dmr example2.R
+#	Rscript example2.R $(DATA) G199.G202.100.200.dmr
 
-boxplot_example_3.eps : rpkm.vs.met
+#G199.G202.1000.200.dmr.eps : G199.G202.1000.200.dmr example2.R
+#	Rscript example2.R $(DATA) G199.G202.1000.200.dmr
+
+#boxplot_example_3.eps : rpkm.vs.met
 	Rscript boxplot_example_3.R	
 
 #example2
 
-G199.G202.10.200.dmr : $(DATA)/G199_cpg.chr1.gimli.10  $(DATA)/G202_cpg.chr1.gimli.10
-	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.10 -b $(DATA)/G202_cpg.chr1.gimli.10 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
+#G199.G202.10.200.dmr : $(DATA)/G199_cpg.chr1.gimli.10  $(DATA)/G202_cpg.chr1.gimli.10
+#	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.10 -b $(DATA)/G202_cpg.chr1.gimli.10 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
 
 
-G199.G202.100.200.dmr : $(DATA)/G199_cpg.chr1.gimli.100  $(DATA)/G202_cpg.chr1.gimli.100
-	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.100 -b $(DATA)/G202_cpg.chr1.gimli.100 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
+#G199.G202.100.200.dmr : $(DATA)/G199_cpg.chr1.gimli.100  $(DATA)/G202_cpg.chr1.gimli.100
+#	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.100 -b $(DATA)/G202_cpg.chr1.gimli.100 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
 
-G199.G202.1000.200.dmr : $(DATA)/G199_cpg.chr1.gimli.1000  $(DATA)/G202_cpg.chr1.gimli.1000
-	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.1000 -b $(DATA)/G202_cpg.chr1.gimli.1000 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
-
-#
-
-
-
+#G199.G202.1000.200.dmr : $(DATA)/G199_cpg.chr1.gimli.1000  $(DATA)/G202_cpg.chr1.gimli.1000
+#	$(BED)/bedtools intersect -a $(DATA)/G199_cpg.chr1.gimli.1000 -b $(DATA)/G202_cpg.chr1.gimli.1000 -wao | awk '$$NF>=200 && ($$7<$$15 || $$17<$$5)' > $@
 
 ###example 3###
 
-S000RD13.tss.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
-	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"}{if ($$7=="+") {print $$1,$$4,$$4,$$7} else {print $$1,$$5,$$5,$$7}}' | awk '$$1=="chr1"'  > $@ 
+#S000RD13.tss.bed : S000RD13.gene_quantification.gem_grape_crg.20130415.gff
+#	cat $^ | awk 'BEGIN{FS="\t";OFS="\t"}{if ($$7=="+") {print $$1,$$4,$$4,$$7} else {print $$1,$$5,$$5,$$7}}' | awk '$$1=="chr1"'  > $@ 
 
-$(DATA)/C004GD51_cpg.chr1.gimli.tss.bed : $(DATA)/C004GD51_cpg.chr1.gimli.gz S000RD13.tss.bed
-	$(BED)/bedtools intersect -b $(DATA)/C004GD51_cpg.chr1.gimli.gz -a S000RD13.tss.bed -wao > $@ 
+#$(DATA)/C004GD51_cpg.chr1.gimli.tss.bed : $(DATA)/C004GD51_cpg.chr1.gimli.gz S000RD13.tss.bed
+#	$(BED)/bedtools intersect -b $(DATA)/C004GD51_cpg.chr1.gimli.gz -a S000RD13.tss.bed -wao > $@ 
 
-C004GD12.rpkm: C004GD12.gene_quantification.gem_grape_crg.20130415.gff 
-	awk 'BEGIN{FS=";"}{print $$1,$$3}' $^ | awk '$$1=="chr1"' | awk 'BEGIN{FS="\t";OFS="\t"}{print $$1,$$4,$$5,$$7,$$9}' | sed -e "s/gene_id//g " | sed -e "s/\"//g" | sed -e "s/RPKM//g" | tr -s ' ' '\t' > $@
+#C004GD12.rpkm: C004GD12.gene_quantification.gem_grape_crg.20130415.gff 
+#	awk 'BEGIN{FS=";"}{print $$1,$$3}' $^ | awk '$$1=="chr1"' | awk 'BEGIN{FS="\t";OFS="\t"}{print $$1,$$4,$$5,$$7,$$9}' | sed -e "s/gene_id//g " | sed -e "s/\"//g" | sed -e "s/RPKM//g" | tr -s ' ' '\t' > $@
 
-C004GD51_cpg.chr1.gimli.tss.filtered.bed : filter.tss.gimli.py $(DATA)/C004GD51_cpg.chr1.gimli.tss.bed
-	python filter.tss.gimli.py $(DATA) > $@
+#C004GD51_cpg.chr1.gimli.tss.filtered.bed : filter.tss.gimli.py $(DATA)/C004GD51_cpg.chr1.gimli.tss.bed
+#	python filter.tss.gimli.py $(DATA) > $@
 
-rpkm.vs.met : join.tss.rpkm.py C004GD51_cpg.chr1.gimli.tss.filtered.bed C004GD12.rpkm
-	python join.tss.rpkm.py > $@ 
-
+#rpkm.vs.met : join.tss.rpkm.py C004GD51_cpg.chr1.gimli.tss.filtered.bed C004GD12.rpkm
+#	python join.tss.rpkm.py > $@ 
 
 ############################
-
 
 gimli_paper.dvi: gimli_paper.tex gimli_paper.bib figures
 	latex gimli_paper.tex

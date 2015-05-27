@@ -1,6 +1,6 @@
 source("libgimli.R")
 
-rdepth<-seq(5,40,by=1)
+rdepth<-seq(5,40,by=5)
 
 l1<-c()
 l2<-c()
