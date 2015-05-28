@@ -124,8 +124,8 @@ fig_variance.eps: random.vs.gimli.R
 	Rscript random.vs.gimli.R
 
 
-#fig6 jump
-fig6.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.1656083.txt C001UYA3bs_cpg.chr1.1655618.1656083.txt C004SQ51_cpg.chr1.1655618.1656083.txt plot_jumps.R
+#fig_jumps
+fig_jumps.eps: C000S5A1bs_cpg.chr1.1655618.1656083.txt C0010KA2bs_cpg.chr1.1655618.1656083.txt C001UYA3bs_cpg.chr1.1655618.1656083.txt C004SQ51_cpg.chr1.1655618.1656083.txt plot_jumps.R
 	Rscript plot_jumps.R
 
 #figrho
@@ -134,7 +134,7 @@ figrho.eps: plot_rho.R
 
 #figures: out.correla.eps figrho.eps fig2.eps fig_variance.eps fig6.eps G199.G200.G201.G202.chr1.gimli.eps G199.G202.100.200.dmr.eps fig_boxplot_size.eps fig_boxplot_lik.eps boxplot_example_3.eps
 
-figures: out.correla.eps figrho.eps fig_delta_cov.eps fig_variance.eps fig6.eps fig_boxplot_size.eps fig_boxplot_lik.eps 
+figures: out.correla.eps figrho.eps fig_delta_cov.eps fig_variance.eps fig_jumps.eps fig_boxplot_size.eps fig_boxplot_lik.eps 
 
 #G199.G200.G201.G202.chr1.gimli.eps: $(DATA)/G199_cpg.chr1.gimli.100.filtered $(DATA)/G202_cpg.chr1.gimli.100.filtered
 #	Rscript figure2.R $(DATA)	
