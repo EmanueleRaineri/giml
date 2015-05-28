@@ -274,16 +274,15 @@ a stretch where many possible values of $\theta$ are present, a partially
 methylated domain (taken from \cite{pmd}) with coordinated 
 \texttt{chr10:112000000-122000000}. Here the data comes from the Blueprint sample \texttt{G199}. 
 
-The same input file is segmented at three different $\lambda$ to illustrate how different velus of the
-parameter capture more or less coarse structures.
 
+The figure below corresponds to segmenting the same genomic region (chr10, from 1.1885e8,1.1893e8) at 
+three different levels of coarseness encoded by the parameter $\lambda$ : 
+these three levels also broadly correspond to three different inherent spatial scales for the segmentation.
 
 \begin{figure}\label{fig_g199_pmd_chr10.eps}
-\includegraphics[width=7cm,angle=270]{fig_g199_pmd_chr10.eps}
+\includegraphics[width=7cm]{fig_g199_pmd_chr10.eps}
 \caption{Partially methylated domain in chr10 segmented with $3$ incleasing $\lambda$s.}
 \end{figure}
-
-
 
 
 \subsection{Jumps}
@@ -338,7 +337,8 @@ Then we summarize the counts by first transforming them in an array of estimated
 values and then finding (by moment matching) a beta distribution which fits them.
 
 The parameters of the Beta distribution can be interpreted as counts of 
-a non converted and converted reads of the experiment giving the same methylation mean 
+a non converted and converted reads (see for example \cite{methyldiff} for a full explanation) 
+of the experiment giving the same methylation mean 
 and variance as a maximum likelihood estimation from the available samples.
 
 This trick allows me to convert a group of samples in a set of counts suitable to be gi
@@ -352,12 +352,10 @@ and the square root of the sum of the variances of the two samples; one can then
 do a t-test.
 
 To tue purpose of illustrating how it might work I plot here a DMR 
-fromt the file mono.M0.l10.dmr  (coordinates :chr5	28927763	28928071).
+\texttt{chr1:27994303-27994356}.
 
 Advantage : we don't need multiple samples per group, hence useful to control
 replicates.
-
-
 
 \section{Implementation}
 
