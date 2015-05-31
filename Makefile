@@ -93,7 +93,8 @@ $(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
 gimli1000: $(GIMLI1000)
 
 #boxplots
-
+fig_g199_pmd_chr10.eps: G199_cpg.chr10.slice.txt G199_cpg.chr10.slice.gimli
+	Rscript plot_pmd.R $^ $@
 
 fig_boxplot_size.eps fig_boxplot_lik.eps: make_boxplots.R
 	Rscript make_boxplots.R

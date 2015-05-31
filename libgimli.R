@@ -38,37 +38,6 @@ libgimli$methyl.diff<-function(nc1,c1,nc2,c2){
 	libgimli$beta.diff (nc1+1 , c1+1 , nc2+1 , c2+1 )
 }
 
-libgimli$p.equal.theta<-function( n1, k1, n2, k2 ){
-	choose( n1 , k1 )*choose( n2 , k2 )*beta( k1+k2+1 , n1-k1+n2-k2+1 )
-}
-
-libgimli$p.equal.theta.sim<-function( n1, k1, n2, k2, size ){
-	theta  <- runif(size)
-	b1     <- mapply( function( t ){ rbinom( 1, n1, t ) } , theta )
-	b2     <- mapply( function( t ){ rbinom( 1, n2, t ) } , theta )
-	sum( b1==k1 & b2==k2 )/size
-}
-
-libgimli$pval.diff.sim<-function( nc1, c1, nc2, c2, size ){
-	theta <- runif(size)
-	d1 <- nc1+c1
-	d2 <- nc2+c2
-	b1 <- mapply( function( t ){ rbinom( 1, d1, t ) }, theta )
-	b2 <- mapply( function( t ){ rbinom( 1, d2, t ) }, theta )
-	sum( b1>=nc1 & b2<=nc2 )/size
-}
-
-libgimli$pval.diff<-function( nc1, c1, nc2, c2){
-	d1<-nc1+c1
-	d2<-nc2+c2
-	pval<-0
-	for ( i in nc1:d1 ){
-		for ( j in 0:nc2 ){
-			pval <- pval + libgimli$p.equal.theta(d1,i,d2,j)
-		}
-	}
-	pval
-}
 
 libgimli$sim.counts<-function(d1,d2,size){
 	theta <- runif( size )
@@ -79,19 +48,9 @@ libgimli$sim.counts<-function(d1,d2,size){
 	d<-data.frame(nc1=nc1,c1=c1,nc2=nc2,c2=c2)
 }
 
-libgimli$distrib.pval.diff<-function(d1,d2,size){
-	d<-libgimil$sim.counts(d1,d2,size)
-	pval  <- mapply( libgimli$pval.diff, d$nc1, d$c1, d$nc2, d$c2 ) 
-}
-
 libgimli$fisher.diff<-function(nc1,c1,nc2,c2){
 		ft<-fisher.test(matrix(c(nc1,c1,nc2,c2),nrow=2),alternative="greater")
 		ft$p.value
-}
-
-libgimli$distrib.pval<-function(d1,d2,size,f){
-	d<-libgimil$sim.counts(d1,d2,size)
-	pval  <- mapply( f, d$nc1, d$c1, d$nc2, d$c2 ) 
 }
 
 libgimli$theta.segment<-function( nc , c ){
@@ -125,7 +84,7 @@ libgimli$load.segments<-function(fname){
 	#returns a data frame
 	seg<-read.table( fname , stringsAsFactors=F )
 	names(seg)<-c( "chrom","start","end","ncpgs",
-		"min","mle","max","loglik",
+		"min","mle","max","mean","var","loglik",
 		"delta","lambda" )
 	return(seg)
 }
@@ -138,6 +97,13 @@ libgimli$load.meth<-function(fname){
 	)
 	return( meth )
 }
+
+libgimli$load.counts<-function(fname){
+	meth.counts<-read.table(fname,stringsAsFactors=F)
+	names(meth.counts)<-c("chrom" , "pos" ,"nc", "c")
+	return ( meth.counts )
+}
+
 
 libgimli$load.dmr<-function( fname ){
 	dmr<-read.table( fname , stringsAsFactors=F )
@@ -175,14 +141,12 @@ libgimli$count.trans <- function(numvect){
 }
 #plotting
 libgimli$plot.segments<-function( seg ,  lb , ub, col ){
-	plot(1, type="n", xlab="", ylab="", 
-	xlim=c(lb, ub), 
-	ylim=c(-0.1, 1.1)
-	)
+	plot(1, type="n", xlab="", ylab=expression(theta), xlim=c(lb, ub), ylim=c(-0.1, 1.1))
 	for (i in 1:nrow(seg)){
 		#vector of xs followed by vector of ys
 		if (seg[i,2]>ub) break
-		lines(c(seg[i,2],seg[i,3]),c(seg[i,"mle"],seg[i,"mle"]),col=col,lwd=2)
+		lines(c(seg[i,2],seg[i,3]),c(seg[i,"mle"],seg[i,"mle"]),xlim=c(lb,ub),
+			col=col,lwd=2)
 	}
 }
 
