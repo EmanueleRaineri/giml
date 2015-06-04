@@ -12,17 +12,17 @@ GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(
 C004GDH1GIMLI=$(DATA)/C004GD51_cpg.chr1.gimli.gz
 GIMLICMD = ./gimli - 0.1:0.2:0.5:1:2:5:10:20:50:100:200:500:1000:2000:5000
 
-gimli: greedy.c
-	gcc -Wall  -o $@ greedy.c -lm
+gimli: gimli.c
+	gcc -Wall  -o $@ $^ -lm
 
-gimli_optimized : greedy.c
-	gcc -Wall  -o $@ greedy.c -lm -O3
+gimli_optimized : gimli.c
+	gcc -Wall  -o $@ $^ -lm -O3
 
-gimli_profile : greedy.c
-	gcc -Wall  -o $@ greedy.c -lm -g -pg
+gimli_profile : gimli.c
+	gcc -Wall  -o $@ $ -lm -g -pg
 
 gimli_static: greedy.c
-	gcc -Wall  -o $@ greedy.c -lm -static	
+	gcc -Wall  -o $@ $^ -lm -static	
 
 out.gimli.2: gimli 
 	./gimli G199.sample > out.gimli
