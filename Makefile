@@ -19,7 +19,7 @@ gimli_optimized : gimli.c
 	gcc -Wall  -o $@ $^ -lm -O3
 
 gimli_profile : gimli.c
-	gcc -Wall  -o $@ $ -lm -g -pg
+	gcc -Wall  -o $@ $^ -lm -g -pg
 
 gimli_static: greedy.c
 	gcc -Wall  -o $@ $^ -lm -static	

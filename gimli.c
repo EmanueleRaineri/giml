@@ -35,7 +35,6 @@ typedef struct node{
 	int to;
 	float loglik;
 	float delta;
-	//float sumtheta;
 	float mletheta;
 	float mean;
 	float var;
@@ -52,11 +51,17 @@ typedef struct heap{
 	node** heap;
 } heap;
 
-
-float dist_penalty(int d){
+float rho(int d){
 	float dpen;
-	dpen=D1/(1+exp(-d/D0))-D1/2+1;
-	//dpen = 1.0;
+	dpen = D1/(1+exp(-d/D0))-D1/2+1;
+	if ( dpen < 1 ){
+		fprintf(stderr,"dpen<1 : %f\n",dpen);
+		exit(1);
+	}
+	if ( dpen > FLT_MAX ){
+		fprintf(stderr,"dpen>FLT_MAX : %f with d:%d\n",dpen,d);
+		exit(1);
+	}
 	return dpen;
 }
 
@@ -82,7 +87,6 @@ float dbinom(int x, int size, float p){
 }
 
 void print_node(node* el, int* pos){
-		//fprintf(stderr,"-------------\n");
 		fprintf(stderr,"id:%d\t",el->segment_id);
 		fprintf(stderr,"from:%d[%d]\t",el->from,pos[el->from]);
 		fprintf(stderr,"to:%d[%d]\t",el->to,pos[el->to]);
@@ -90,19 +94,12 @@ void print_node(node* el, int* pos){
 		fprintf(stderr,"sum_c:%d\t",el->sum_c);
 		fprintf(stderr,"loglik:%.4f\t",el->loglik);
 		fprintf(stderr,"delta:%.4f\n",el->delta);
-		//fprintf(stderr,"-------------\n");
 }
 
 int print_list(FILE* stream, node* head, int* pos, float lambda){
 	int le = 0;	
 	node* el = head;
 	while(el!=NULL){
-		//fprintf(stream,"%d\t",el->segment_id);
-	//	fprintf(stream, "%d\t",el->from);
-	//	fprintf(stream,"%d\t",el->to);
-	//	fprintf(stream,"%.4f\t",el->loglik);
-	//	fprintf(stream,"%.4f\t",el->delta);
-	//	fprintf(stream,"%.4f\n",lambda);
    		print_node(el,pos);
 		le++;
 		el = el->next;
@@ -133,19 +130,15 @@ void mean_var(node* el, table* data, float* mean, float* var){
 }
 
 void update_lik(node* el, table* data){
-	//float sumtheta=0;
 	int sum_nc=0;
 	int sum_c=0;
 	int i;
 	int* nc=data->nc;
 	int* c = data->c;
-	//float* theta = data->theta;
 	for( i = el->from; i <= el->to; i++ ){
 		sum_nc += nc[i];
 		sum_c  += c[i];
-		//sumtheta+=theta[i];		
 	}
-	//el->sumtheta = sumtheta;
 	el->sum_nc   = sum_nc;
 	el->sum_c    = sum_c;
 	el->mletheta = (float)sum_nc/(sum_nc+sum_c);
@@ -187,7 +180,6 @@ void delta_lik( node* el, table* data ){
 		print_node(el->next,data->pos);
 		exit(1);
 	}
-
 	el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],mletheta);
@@ -200,18 +192,9 @@ void delta_lik( node* el, table* data ){
 		data->pos[el->next->from] );
 		exit(1);
 	}
-	dpen = dist_penalty(d);
-	if (dpen<1){
-		fprintf(stderr,"dpen<1 : %f\n",dpen);
-		exit(1);
-	}
-	if (dpen>FLT_MAX){
-		fprintf(stderr,"dpen>FLT_MAX : %f with d:%d\n",dpen,d);
-		exit(1);
-	}
+	dpen = rho(d);
 	el->delta = (el->delta)*dpen;
 }
-
 
 void fill_node(node* el, table* data, int i){
 		/*
@@ -225,7 +208,6 @@ void fill_node(node* el, table* data, int i){
 		el->segment_id = i;	
 		el->sum_nc = data->nc[i];
 		el->sum_c  = data->c[i];
-		//el->sumtheta = data->theta[i];
 		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
 		el->mean = data->theta[i];
 		el->var  = 0.0;
@@ -475,6 +457,7 @@ float find_heap_max(heap* h){
 }
 
 void merge1(node* maxn, node* tmpnext, heap* h, table* data){
+	//(1)max==head
 	if (DEBUG) fprintf(stderr,"merging 1\n");
 	heap_delete(h,tmpnext->heapidx);
 	maxn->to = tmpnext->to;
@@ -488,6 +471,7 @@ void merge1(node* maxn, node* tmpnext, heap* h, table* data){
 }
 
 void merge2(node* maxn, node* tmpnext, heap* h, table* data){
+	/**  (2)max==node in the middle of long list **/
 	heap_delete( h , tmpnext->heapidx );
 	heap_delete( h , maxn->prev->heapidx );
 	maxn->to = tmpnext->to;
@@ -504,6 +488,7 @@ void merge2(node* maxn, node* tmpnext, heap* h, table* data){
 }
 
 void merge3(node* maxn, node* tmpnext, heap* h, table* data){
+	/** (3)max==last but one node, merging with the last **/
 	heap_delete( h , tmpnext->heapidx );
 	if (maxn->prev != NULL) heap_delete( h , maxn->prev->heapidx );
 	maxn->to = tmpnext->to;
@@ -517,7 +502,6 @@ void merge3(node* maxn, node* tmpnext, heap* h, table* data){
 	free( tmpnext );
 	tmpnext = NULL;
 }
-
 
 void free_all(node* head, table* data, heap* h){
 	free_list( head );
@@ -555,7 +539,7 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 
-	if ( strcmp(argv[1],"-")==0 ){
+	if ( strcmp( argv[1] , "-" ) == 0 ){
 		in=stdin;
 	}else{
 		in = fopen(argv[1],"r");
@@ -634,9 +618,9 @@ read:
 	h->size = 0;
 	/* *** */
 	
-	fprintf(stderr,"initialize delta...\n");
+	fprintf(stderr,"initializing nodes...\n");
 	el=head;
-	
+	/* initialize nodes in the list computing delta L to next node */	
 	while(1){
 		if ( el->next == NULL ) {
 			el->delta = -FLT_MAX;
@@ -649,15 +633,14 @@ read:
 		el = el->next;
 	}
 	fprintf(stderr,"done\n");
-	le=print_list( stderr , head , data->pos , 0 );	
 	int loopc=0;
 	float deltalik,totloglik=0;
-	if (DEBUG) print_heap(h);
-	mergec=0;	
-	if (cutoff){
-		fprintf(stderr,"with distance penalty\n");
+	if (DEBUG) print_heap( h );
+	mergec = 0;	
+	if ( cutoff ){
+		fprintf( stderr , "with distance penalty\n" );
 	} else{
-		fprintf(stderr,"no distance penalty\n");
+		fprintf( stderr , "no distance penalty\n" );
 	}
 	while(1){
 		if (DEBUG) print_heap(h);
