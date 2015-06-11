@@ -13,9 +13,13 @@ libgimli$loglik<-function(nonconv , conv){
 	nc*theta+co*(1-theta)
 }
 
-libgimli$totloglik<-function(nonconv,conv,ls){
-	#ls is list of segments
+libgimli$generic.loglik<-function(nonconv , conv, theta){
+	nc<-sum(nonconv)
+	co<-sum(conv)
+	dbinom(x=nc,size=nc+co,p=theta,log=T)+
+	nc*theta+co*(1-theta)
 }
+
 
 libgimli$smooth.meth<-function( meth , bw=1000 , n.points=1000) {
 	res<-ksmooth(meth$pos, 

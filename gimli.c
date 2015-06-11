@@ -53,11 +53,11 @@ typedef struct heap{
 
 float rho(int d){
 	float dpen;
-	dpen = D1/(1+exp(-d/D0))-D1/2+1;
-	if ( dpen < 1 ){
+	dpen = D1/(1+exp(-d/D0))-D1/2;
+	/*if ( dpen < 1 ){
 		fprintf(stderr,"dpen<1 : %f\n",dpen);
 		exit(1);
-	}
+	}*/
 	if ( dpen > FLT_MAX ){
 		fprintf(stderr,"dpen>FLT_MAX : %f with d:%d\n",dpen,d);
 		exit(1);
@@ -142,7 +142,7 @@ void update_lik(node* el, table* data){
 	el->sum_nc   = sum_nc;
 	el->sum_c    = sum_c;
 	el->mletheta = (float)sum_nc/(sum_nc+sum_c);
-	if ( el->mletheta==0 && el->sum_nc>0 ) {
+	if ( fabs(el->mletheta)<FLT_EPSILON && el->sum_nc>0 ) {
 		fprintf( stderr, "update_lik:invalid mle %.4f\n", el->mletheta );
 		exit( 1 );
 	}
@@ -168,13 +168,8 @@ void delta_lik( node* el, table* data ){
 	sum_nc=el->sum_nc+el->next->sum_nc;
 	sum_c = el->sum_c+el->next->sum_c;
 	mletheta=(float)sum_nc/(sum_c+sum_nc);
-	if ( mletheta==0 && sum_nc>0 ) {
-		fprintf( stderr, "delta_lik:invalid mle %.4f\n" , mletheta );
-		print_node(el,data->pos);
-		print_node(el->next,data->pos);
-		exit(1);
-	}
-	if ( mletheta==1 && sum_c>0 ) {
+	if ( ( fabs(mletheta)<FLT_EPSILON && sum_nc>0) || 
+		( fabs(mletheta - 1 )<FLT_EPSILON && sum_c > 0) ) {
 		fprintf( stderr, "delta_lik:invalid mle %.4f\n" , mletheta );
 		print_node(el,data->pos);
 		print_node(el->next,data->pos);
@@ -184,7 +179,13 @@ void delta_lik( node* el, table* data ){
 	for( i = el->from; i <= el->next->to; i++ ){
 		el->delta+=dbinom(nc[i],nc[i]+c[i],mletheta);
 	}
-	el->delta = el->delta - el->loglik - el->next->loglik;
+	el->delta = el->delta - el->loglik - el->next->loglik ;
+	if (el->delta>FLT_EPSILON){
+		fprintf( stderr, "warning: delta_lik:invalid el->delta %g\n" , 
+			el->delta );
+		print_node(el,data->pos);
+		print_node(el->next,data->pos);
+	}
 	// here distance penalty 
 	d =  data->pos[el->next->from] - data->pos[el->to]; 
 	if ( d<=0 ){
@@ -193,7 +194,8 @@ void delta_lik( node* el, table* data ){
 		exit(1);
 	}
 	dpen = rho(d);
-	el->delta = (el->delta)*dpen;
+	fprintf(stderr,"rho:%d\t%f\t%f\n",d,dpen,el->delta);
+	el->delta = (el->delta)-dpen;
 }
 
 void fill_node(node* el, table* data, int i){
@@ -523,6 +525,7 @@ int main(int argc, char* argv[]){
 	fprintf(stderr,"GIMLI -- emanuele.raineri@gmail.com\n");
 	fprintf(stderr,"source code timestamp: %s\n", __TIMESTAMP__ );
 	fprintf(stderr,"compiled on %s %s\n",__DATE__ , __TIME__ );
+	fprintf(stderr,"FLT_EPSILON=%g\n",FLT_EPSILON);
 	#if defined(NDEBUG)
 	fprintf(stderr,"Assert disabled.\n");
 	#else
