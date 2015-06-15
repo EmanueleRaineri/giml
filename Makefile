@@ -7,8 +7,8 @@ BED=/Users/emanueleraineri/bin/bedtools2/bin
 endif
 
 DATA  = ~/Desktop/meth_data
-METH = $(DATA)/G199_cpg.chr1.txt.gz $(DATA)/G200_cpg.chr1.txt.gz $(DATA)/G201_cpg.chr1.txt.gz $(DATA)/G202_cpg.chr1.txt.gz
-GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(DATA)/G201_cpg.chr1.gimli.1000 $(DATA)/G202_cpg.chr1.gimli.1000 
+METH = $(DATA)/G199_cpg.chr1.txt.gz 
+#GIMLI1000 = $(DATA)/G199_cpg.chr1.gimli.1000 $(DATA)/G200_cpg.chr1.gimli.1000 $(DATA)/G201_cpg.chr1.gimli.1000 $(DATA)/G202_cpg.chr1.gimli.1000 
 #GIMLICMD = ./gimli - 0.1:0.2:0.5:1:2:5:10:20:50:100:200:500:1000:2000:5000
 GIMLICMD = ./gimli - 1:10:100:1000
 
@@ -61,36 +61,49 @@ $(DATA)/G200_cpg.chr1.gimli.gz : $(DATA)/G200_cpg.chr1.txt.gz
 $(DATA)/G201_cpg.chr1.gimli.gz : $(DATA)/G201_cpg.chr1.txt.gz	
 	zcat $(DATA)/G201_cpg.chr1.txt.gz | awk '{print $$1,$$2,$$6,$$7}' | $(GIMLICMD) 2> /dev/null | gzip -c > $(DATA)/G201_cpg.chr1.gimli.gz
 
-$(GIMLI1000) : $(DATA)/G199_cpg.chr1.gimli.gz $(DATA)/G200_cpg.chr1.gimli.gz $(DATA)/G201_cpg.chr1.gimli.gz $(DATA)/G202_cpg.chr1.gimli.gz
-	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G199_cpg.chr1.gimli.1000
-	zcat $(DATA)/G200_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G200_cpg.chr1.gimli.1000
-	zcat $(DATA)/G201_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G201_cpg.chr1.gimli.1000
-	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G202_cpg.chr1.gimli.1000
+#$(GIMLI1000) : $(DATA)/G199_cpg.chr1.gimli.gz $(DATA)/G200_cpg.chr1.gimli.gz $(DATA)/G201_cpg.chr1.gimli.gz $(DATA)/G202_cpg.chr1.gimli.gz
+#	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G199_cpg.chr1.gimli.1000
+#	zcat $(DATA)/G200_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G200_cpg.chr1.gimli.1000
+#	zcat $(DATA)/G201_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G201_cpg.chr1.gimli.1000
+#	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==1000' > $(DATA)/G202_cpg.chr1.gimli.1000
 
-$(DATA)/G199_cpg.chr1.gimli.100: $(DATA)/G199_cpg.chr1.gimli.gz
-	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G199_cpg.chr1.gimli.100
+#$(DATA)/G199_cpg.chr1.gimli.100: $(DATA)/G199_cpg.chr1.gimli.gz
+#	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G199_cpg.chr1.gimli.100
 
-$(DATA)/G202_cpg.chr1.gimli.100: $(DATA)/G202_cpg.chr1.gimli.gz
-	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G202_cpg.chr1.gimli.100
+#$(DATA)/G202_cpg.chr1.gimli.100: $(DATA)/G202_cpg.chr1.gimli.gz
+#	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==100' > $(DATA)/G202_cpg.chr1.gimli.100
 
-$(DATA)/G199_cpg.chr1.gimli.10: $(DATA)/G199_cpg.chr1.gimli.gz
-	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G199_cpg.chr1.gimli.10
+#$(DATA)/G199_cpg.chr1.gimli.10: $(DATA)/G199_cpg.chr1.gimli.gz
+#	zcat $(DATA)/G199_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G199_cpg.chr1.gimli.10
 
-$(DATA)/G202_cpg.chr1.gimli.10: $(DATA)/G202_cpg.chr1.gimli.gz
-	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G202_cpg.chr1.gimli.10
+#$(DATA)/G202_cpg.chr1.gimli.10: $(DATA)/G202_cpg.chr1.gimli.gz
+#	zcat $(DATA)/G202_cpg.chr1.gimli.gz | awk '$$NF==10' > $(DATA)/G202_cpg.chr1.gimli.10
 
-$(DATA)/G199_cpg.chr1.gimli.100.filtered: $(DATA)/G199_cpg.chr1.gimli.100
-	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
+#$(DATA)/G199_cpg.chr1.gimli.100.filtered: $(DATA)/G199_cpg.chr1.gimli.100
+#	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
 
-$(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
-	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
+#$(DATA)/G202_cpg.chr1.gimli.100.filtered: $(DATA)/G202_cpg.chr1.gimli.100
+#	awk '$$4/($$3-$$2+1)>0.0' $^ > $@ 
 
 
-gimli1000: $(GIMLI1000)
+#gimli1000: $(GIMLI1000)
 
-#boxplots
+
+#########pmd
+
+SELECT = awk '{if ($$1=="chr10" && $$2<=1.22e8 && $$2>=1.12e8){ print $$1,$$2,$$6,$$7 }}'
+
+G199_cpg.chr10.slice.txt: $(DATA)/G199_cpg.txt.gz
+	zcat $< | $(SELECT) > $@
+
+G199_cpg.chr10.slice.gimli : G199_cpg.chr10.slice.txt
+	./gimli $< 1:10:100:1000 > $@ 2> G199_cpg.chr10.slice.gimli.log
+
 fig_g199_pmd_chr10.eps: G199_cpg.chr10.slice.txt G199_cpg.chr10.slice.gimli
 	Rscript plot_pmd.R $^ $@
+
+#########
+
 
 fig_boxplot_size.eps fig_boxplot_lik.eps: make_boxplots.R
 	Rscript make_boxplots.R
@@ -102,7 +115,7 @@ delta.vs.cov.txt: cov.effect.R
 
 
 delta.vs.cov.mean.txt : delta.vs.cov.txt
-	cat $^  | datamash -g 1 mean 8 sstdev 8 > $@
+	cat $<  | datamash -g 1 mean 8 sstdev 8 > $@
 
 
 fig_delta_cov.eps: delta.vs.cov.txt delta.vs.cov.R
@@ -112,7 +125,7 @@ fig_delta_cov.eps: delta.vs.cov.txt delta.vs.cov.R
 #fig_variance random segments vs gimli segments
 
 random_mean_var_le15.txt: $(DATA)/G199_cpg.chr1.txt.gz
-	zcat $^ | ocaml str.cma random.cpgs.ml > $@
+	zcat $< | ocaml str.cma random.cpgs.ml > $@
 
 
 gimli_mean_var_le15.txt : $(DATA)/G199_cpg.chr1.gimli.gz

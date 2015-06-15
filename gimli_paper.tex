@@ -98,13 +98,14 @@ in the sense that if the expected size of a block is very large one needs few of
 cover the genomic region under consideration.
 
 \section{The algorithm}
-The basic idea underpinning this method is to find a segmentation
-by optimizing  a function $\psi$ which depends on the coordinates
+The idea underpinning this method is, in its essence, to optimize  
+a function $\psi$ which depends on the coordinates
 of each block as well as on the spatial distribution of the CpGs.
 Since the optimization is carried out
-in a greedy fashion there's no guarantee
-that it finds a global maximum, rather a good enough maximum for practical
-purposes.
+in a greedy fashion there is no guarantee
+that it finds a global maximum, 
+but it will typically arrive at a value close enough to the optimal 
+one to be useful.
 \subsection{Blocks and their likelihood}
 The  input to \gimli{} is a set of $N$ methylated positions 
 which do not specifically need to be CpGs.
@@ -120,24 +121,25 @@ This is the maximum number of loci that a WGBS experiment can capture:
 in practice, even at a decent read depth,
 some of them do not appear in the sequencing result. 
 The number of nonconverted (respectively, converted) reads mapping at 
-position $j$ is $\overline{n}_j$ (respectively, $n_j$). 
+position $j$ is $\overline{n}_j$ (respectively, $n_j$) : the methylation
+at CpG $j$ implied by the counts is $\frac{\overline{n}_j}{\overline{n}_j+n_j}$
 
 The output of \gimli{} is a set of blocks 
 covering the initial positions 
 such that each block contains CpGs which are similarly
 methylated. The strength with which
 one imposes the similarity constraint
-is controlled by a coarseness parameter $\lambda$.
+is controlled by a parameter $\lambda$.
 Internally the program  mantains a list of the current  
 blocks (indexed by $i=1,\dots,N_S$), 
 which at the beginning 
 coincides with the loci given in input. 
-( i.e.  $N_S=N$ and each block has length $1$). 
+( \ie{}  $N_S=N$ and each block has length $1$). 
 To each segment $i$ there is associated a $\hat{\theta}_i$ which
 is the maximum likelihood estimation of the methylation given the counts
 at each position in the segment. 
 For example, if segment $i$ includes the CpGs from $j_1$ to $j_2$
-the the maximum likelihood estimation for $\hat{\theta}_i$ is:
+one has:
 
 \[
 \hat{\theta}_i=\frac{\overline{n}}{n + \overline{n}}
@@ -155,6 +157,9 @@ and
 n=\sum_{j=j_1}^{j_2} n_j
 \]
 
+I will use a boldface
+$\pmb{\theta}_i$ to refer to the vector of the methylation values of all the loci belonging to 
+block $i$.  
 The likelihood of such a block is defined as follows:
 
 \begin{equation}
@@ -165,44 +170,58 @@ The likelihood of such a block is defined as follows:
 \end{equation}
 \label{loglik}
 
-I will use a boldface
-$\pmb{\theta}_i$ to refer to the vector of the methylation values of all the loci belonging to 
-block $i$.  The likelihood is used as a fundamental component in the function $\psi$, defined below,
-which is to be maximized.
-
-\subsection{merging blocks}
-
 The way the program works is by 
 scanning repeatedly the list of blocks and evaluate whether any pair 
 of adjacent ones can be conveniently merged into one.  
-This is decided by checking whether the loss in 
-likelihood consequent to the merging is compensated 
-(or more than compensated)
-by the reduction in complexity achieved by it.
+	This is decided by computing a function $\psi_{i,i+1}$ which is the sum of three terms:
+the loss in likelihood consequent to the merging of $i$ and $i+1$ (denoted as $\Delta  \lik_{i,i+1}$),
+the reduction in complexity of the segmentation achieved by it (as measured by $\lambda$)
+and a distance penalty term $\rho_{i,i+1}$ which keeps into account the distance in base pairs of the two blocks
+being considered 
+The algorithm computes the index $i$ corresponding to the maximum
+values of 
 
-After a merging, let $\hat{\theta}_{i,i+1}$ be the mle estimation of methylation of 
+\begin{equation}
+\psi_{i,i+1} =  \Delta  \lik_{i,i+1}  - \rho_{i,i+1}  +\lambda
+\end{equation}
+and, if that maximum is positive conjoins the respective segments into one.
+I now explain each of the three above mentioned terms in detail.
+
+\subsection{likelihood change}
+
+
+To compute the change in likelihood corresponding to a merge operation, let 
+$\hat{\theta}_{i,i+1}$ be the mle estimation of methylation of 
 a segment which includes
-all the loci in segments $i$ and $i+1$.
-The corresponding change in likelihood is 
-Notice that it can be  
+all the loci in segments $i$ and $i+1$. Then one has:
+
 \[\Delta  \lik_{i,i+1} = \lik_i(\hat{\theta}_{i,i+1})+
 	\lik_{i+1}(\hat{\theta}_{i,i+1}) 
 	-\lik_i(\hat{\theta}_{i})
 	-\lik_{i+1}(\hat{\theta}_{i+1}) \] 
 
-Note that $\Delta  \lik_{i,i+1} \leq 0$: this is counterbalanced, though, by the fact the the number 
-of segments decreases by $1$. To take into account this decrease in 
-complexity one can consider the following expression:
+Note that $\Delta  \lik_{i,i+1} \leq 0$
+\subsection{reduction in the number of segments}
+the loss in likelihood this is counterbalanced, by the fact the the number 
+of segments decreases by $1$. This reduction in complexity is
+refelcted in the term $\lambda$ in the definition of $\psi$. $\lambda$
+is chosen by the user, and longer $\lambda$s allow one to connect
+regions with more divergetn methylation; this implies that the median length of
+the blocks increases with $\lambda$ as shown in figure~\ref{fig_boxplot_size}.
 
-\[\Delta  \lik_{i,i+1}  + \lambda\]
+\begin{figure}\label{fig_boxplot_size}
+\includegraphics[width=7cm,angle=270]{fig_boxplot_size.eps}
+\caption{Median length of blocks is higher at higher $\lambda$s.}
+\end{figure}
 
-Furthermore, one has to take into account that methylated sites are irregularly 
+\subsection{sparsity of CpGs}
+Methylated sites are irregularly 
 spaced along the genome and the variability 
 introduced by the sequencing process usually increases the distance 
 between adjacent sites.
 To avoid building segments which span long regions where no CpGs exist, one 
-can multiply the difference in likelihoods by a sigmoidal penalty term of the
-form \[\rho_{i,i+1}=\frac{D1}{1+\exp(-D_{i,i+1}/D0)}-\frac{D_1}{2}\] (see fig\ref{figrho}) 
+can subtract from the difference in likelihoods a sigmoidal penalty term of the
+form \[\rho_{i,i+1}=\frac{D_1}{1+\exp(-D_{i,i+1}/D_0)}-\frac{D_1}{2}\] (see fig\ref{figrho}) 
 where $D_{i,i+1}$ is the distance 
 between the the right end of segment $i$ and the left end of segment $i+1$ and 
 $D_0,D_1$ are constants which  I set heuristically to  $D_0=10000,D_1=100$. 
@@ -211,16 +230,6 @@ $D_0,D_1$ are constants which  I set heuristically to  $D_0=10000,D_1=100$.
 \includegraphics[width=7cm,angle=270]{figrho.eps}
 \caption{Empirical penalty factor $\rho$}
 \end{figure}
-
-Hence the final expression for $\psi_{i,i+1}$ is:
-
-\begin{equation}
-\psi_{i,i+1} =  \Delta  \lik_{i,i+1}  - \rho_{i,i+1}  +\lambda
-\end{equation}
-
-Once it has computed 
-$\psi_{i,i+1}$ for all $i$, the algorithm selects the maximum 
-one : if this is positive, it conjoins the corresponding segments into one.
 
 The software repeats the scanning and merging until $\psi_{i,i+1} \leq 0$ 
 which means that it is not possible to 
@@ -247,7 +256,7 @@ at higher read depth, when the methylation values are more precisely known.
 
 \section{Results}
 
-Reassuringly, the segments created by \gimli{} to have lower methylation
+Reassuringly, the segments created by \gimli{} have lower methylation
 variability than random segments of the same length extracted from the 
 input dataset. 
 This is shown in \ref{fig_variance}.
@@ -262,21 +271,6 @@ computed with \gimli{}. Methylation values from }
 \begin{figure}\label{fig_delta_cov}
 \includegraphics[width=7cm,angle=270]{fig_delta_cov.eps}
 \caption{$\Delta  \lik$ at fixed methylation difference depends on read depth.}
-\end{figure}
-
-I can now refine quantitatively the assertion that the complexity of the model
-is linked to the typical lengths of the segments : as figure \ref{fig_boxplot_size} 
-shows the median length of the blocks increases with $\lambda$. This is 
-accompanied by a decrease in likelihood of the segments (\ref{fig_boxplot_lik})
-
-\begin{figure}\label{fig_boxplot_size}
-\includegraphics[width=7cm,angle=270]{fig_boxplot_size.eps}
-\caption{Median length of blocks is higher at higher $\lambda$s.}
-\end{figure}
-
-\begin{figure}\label{fig_boxplot_lik}
-\includegraphics[width=7cm,angle=270]{fig_boxplot_lik.eps}
-\caption{Likelihood of blocks diminishes with $\lambda$.}
 \end{figure}
 
 While one can verify that the numbers computed by the algorithm are in 
@@ -295,7 +289,7 @@ a stretch where many possible values of $\theta$ are present, a partially
 methylated domain (taken from \cite{pmd}) with coordinated 
 \texttt{chr10:112000000-122000000}. Here the data comes from the Blueprint sample \texttt{G199}. 
 
-The figure below corresponds to segmenting the same genomic region (chr10, from 1.1885e8,1.1893e8) at 
+The figure below corresponds to segmenting the same genomic sub region \texttt{chr10:1.1885e8-1.1893e8} at 
 three different levels of coarseness encoded by the parameter $\lambda$ : 
 these three levels also broadly correspond to three different inherent spatial scales for the segmentation,and allow one to 
 see by eye interesting substructures. 
@@ -308,9 +302,11 @@ see by eye interesting substructures.
 
 \subsection{Jumps}
 
-First I'll show how the boundary of the segments, (its  breakpoints)
-can correspond to landmarks in the genome. To this purpose, I considered the 
-$4$ Blueprint monocytes \verb=C000S5A1bs=,\verb=C0010KA2bs=,\verb=C001UYA3bs= and \verb=C004SQ51= 
+The boundary of the segments, (its  breakpoints)
+can correspond to landmarks in the genome. To show that this is the case, 
+I considered the 
+$4$ Blueprint monocytes \texttt{C000S5A1bs}, \texttt{C0010KA2bs},
+\texttt{C001UYA3bs} and \texttt{C004SQ51}.
 I computed their segmentation for $\lambda=10$ and looked for all the triples of consecutive segments
 with corresponding vectors methylation values $\pmb{\theta}_{1},\pmb{\theta}_{2},\pmb{\theta}_{3}$
 where 
@@ -328,8 +324,9 @@ See for example figure \ref{fig_jumps}
 
 In this way I obtain $143$ such triplets. Looking at their central segmentes
 (those in a comparatively low methylation states) I find that their median length is
-$252$bp (minimum length $39$, maximum $252$). When I intersect this central segments with the Blueprint
-annotation, I find than $94$ overlap a known transcript, suggesting that regions with stark 
+$364$bp (minimum length $128$, maximum $733$). When I intersect this central segments with the Blueprint
+annotation, I find than $36$ overlap a transcription start site (as defined above), 
+suggesting that regions with stark 
 changes in methylation
 might sistematically correspond to regulated parts of the genome.
 
