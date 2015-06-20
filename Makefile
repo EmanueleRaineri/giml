@@ -158,6 +158,14 @@ gimli_paper.pdf: gimli_paper.dvi
 
 ##################
 
+
+smodia15_abstract.dvi: smodia15_abstract.tex
+	latex $<
+
+smodia15_abstract.pdf: smodia15_abstract.dvi
+	dvipdf $<
+
+
 .PHONY : clean 
 
 clean:
