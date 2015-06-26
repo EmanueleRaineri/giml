@@ -3,6 +3,7 @@
 \renewcommand{\rmdefault}{ppl}
 \newcommand{\gimli}{\texttt{gimli}}
 \newcommand{\ie}{\textit{i.e.}}
+\newcommand{\eg}{\textit{e.g.}}
 
 \begin{document}
 
@@ -11,7 +12,7 @@
 \date{\today}
 \maketitle
 
-Methylation has a strong local correlation,
+DNA Methylation has a strong local correlation,
 in the sense that the level at one position predicts 
 very well the observations nearby; this suggests that it should be possible
 to build compressed representations of the data in which contiguous loci 
@@ -23,7 +24,7 @@ whole genome bisulfite sequencing (WGBS).
 A segmentation joins adjacent positions
 which have similar properties, while the boundary between segments 
 indicates more or less abrupt changes
-in the signal which might relate to biological mechanisms. 
+in the signal.
 
 Changes in methylation can be observed both at the level of a single promoter
 region  and when looking at stretches
@@ -32,9 +33,8 @@ This brings about contrasting requirements when analyzing this kind of data:
 large scale (slow) variations are 
 significant and must be looked at, but a rough
 running average with a window of many megabases might destroy interesting
-local detail. Here I present  a software (\gimli{}) which computes a 
-segmentation across multiple scales of methylation 
-data (acquired through WGBS).
+local detail. Here I present  a software (\gimli{}) which finds  
+segmentations at multiple scales.
 %One salient aspects which must be considered when it comes to 
 %analyzing methylation data is that this epigenetic mark seems 
 %to have effect at various genomic scales 
@@ -47,14 +47,13 @@ kind of statistical modeling is expedient for
 visualization, comparison of samples,
 and demarcation of unusual tracts in 
 order to direct further analysis 
-(\ie{} regions corresponding to stark changes).
+(\eg{} regions corresponding to stark changes).
 
 The idea underpinning this method is, in its essence, to optimize  
-greedily a function which depends on the coordinates
+a function which depends on the coordinates
 of each block as well as on the spatial distribution of the CpGs.
-Even if the optimization is carried out
-in a greedy fashion (hence there is no guarantee
-that it finds a global maximum) 
-it will typically arrive at a value close enough to the optimal 
-one to be useful.
+The search for optima is carried out
+in a greedy fashion, hence there is no guarantee
+that it finds a global maximum: nevertheless, the approximated results are good enough
+to be useful.
 \end{document}
