@@ -1,7 +1,6 @@
 \documentclass[12pt]{amsart}
 \usepackage{graphicx}
 \usepackage{palatino,eulervm}
-%\usepackage{concrete}
 
 \newcommand{\lik}{\ensuremath{\mathcal{L}}}
 \newcommand{\gimli}{\texttt{gimli}}
@@ -22,25 +21,69 @@
 %it is useful to implement software 
 %which can quickly summarize the data and extract patterns to help 
 %automating at least  part of the biological analysis. 
-In this paper, I show one efficient way of computing 
+DNA Methylation has a strong local correlation,
+in the sense that the level at one position predicts 
+very well the observations nearby; this suggests that it should be possible
+to build compressed representations of the data in which contiguous loci 
+are collected into segments.
+
+In this paper, I outline one efficient way of computing 
 segmentations of methylation values determined by 
-whole genome bisulfite sequencing
+whole genome bisulfite sequencing (WGBS).
 A segmentation joins adjacent positions
 which have similar properties, while the boundary between segments 
 indicates more or less abrupt changes
-in the signal which might relate to biological mechanisms. 
-One salient aspects which must be considered when it comes to 
-analyzing methylation data is that this epigenetic mark seems 
-to have effect at various genomic scales 
-(ranging from hundred of bases to megabases), hence 
-one nees a method that works at many scales. 
-The probabilistic approach I introduce here 
-can be used to calculate automatic segmentations at different scales.
+in the signal.
+
+Changes in methylation can be observed both at the level of a single promoter
+region  and when looking at stretches
+of millions of bases.
+This brings about contrasting requirements when analyzing this kind of data: 
+large scale (slow) variations are 
+significant and must be looked at, but a rough
+running average with a window of many megabases might destroy interesting
+local detail. Here I present  a software (\gimli{}) which finds  
+segmentations at multiple scales.
+%One salient aspects which must be considered when it comes to 
+%analyzing methylation data is that this epigenetic mark seems 
+%to have effect at various genomic scales 
+%(ranging from hundred of bases to megabases), hence 
+%one nees a method that works at many scales. 
+%The probabilistic approach I introduce here 
+%can be used to calculate automatic segmentations at different scales.
 I also show how this 
 kind of statistical modeling is expedient for 
-visualization, comparison across samples,
-and demarcation of unusual regions in 
-order to direct further analysis (\ie{} regions with stark variations in the signal).
+visualization, comparison of samples,
+and demarcation of unusual tracts in 
+order to direct further analysis 
+(\eg{} regions corresponding to stark changes).
+
+The idea underpinning this method is, in its essence, to optimize  
+a function which depends on the coordinates
+of each block as well as on the spatial distribution of the CpGs.
+The search for optima is carried out
+in a greedy fashion, hence there is no guarantee
+that it finds a global maximum: nevertheless, the approximated results 
+are good enough to be useful.
+%In this paper, I show one efficient way of computing 
+%segmentations of methylation values determined by 
+%whole genome bisulfite sequencing
+%A segmentation joins adjacent positions
+%which have similar properties, while the boundary between segments 
+%indicates more or less abrupt changes
+%in the signal which might relate to biological mechanisms. 
+%One salient aspects which must be considered when it comes to 
+%analyzing methylation data is that this epigenetic mark seems 
+%to have effect at various genomic scales 
+%(ranging from hundred of bases to megabases), hence 
+%one nees a method that works at many scales. 
+%The probabilistic approach I introduce here 
+%can be used to calculate automatic segmentations at different scales.
+%I also show how this 
+%kind of statistical modeling is expedient for 
+%visualization, comparison across samples,
+%and demarcation of unusual regions in 
+%order to direct further analysis (\ie{} regions with stark variations in the signal).
 \end{abstract}
 
 \section{Introduction}
@@ -49,39 +92,37 @@ Whole Genome Bisulfite sequencing (WGBS) allows measurements of methylation
 status with single base resolution across an entire genome. The outcome
 of a WGBS experiment is a count of so called {\it non converted} and {\it converted} 
 reads at each 
-sequenced position : the methylation level, $\theta$, is defined
-as the ration of the non converted reads over the total of converted and non converted reads.
-Methylation has a strong local correlation,
-in the sense that the level at one position predicts 
-very well the observations nearby; this suggests that it should be possible
-to build compressed representations of the data in which contiguous loci 
-are collected into segments.
-This local correlation is depicted in figure~\ref{fig_corr},
+sequenced position : the methylation level $\theta$ is defined
+as the ratio of the non converted reads over the total of converted and 
+non converted reads.
+%Methylation has a strong local correlation,
+%in the sense that the level at one position predicts 
+%very well the observations nearby; this suggests that it should be possible
+%to build compressed representations of the data in which contiguous loci 
+%are collected into segments.
+The spatial correlation of the signal is depicted in figure~\ref{fig_corr},
 and it has been observed indipendently many times (for example
 see \cite{bsmooth} and references therein).
 
 \begin{center}
 \begin{figure}\label{fig_corr}
 \includegraphics[width=7cm,angle=270]{out.correla.eps}
-\caption{This plot is produced by extracting $1$ million random pairs of CpG loci;
-storing the pairs in $20$ different bins  according to the distance between the members
-of the pair (from $0-100$ to $1900-2000$); and computing the correlation in each bin,
-using the pairs contained in it.}
+\caption{This plot is produced by extracting $1$ million random pairs of CpG loci
+for which methylation has been measured;
+storing the pairs in $20$ different bins  according to the distance between 
+the members of the pair (from $0-100$ to $1900-2000$); and computing the 
+correlation in each bin, using the pairs contained in it.}
 \end{figure}
 \end{center}
  
-Changes in methylation can be observed both at the level of a single promoter
-region (hundreds of bases, \cite{methylseekr}) and when looking at stretches
-of millions of bases (\cite{largeblocks} ).
-This brings about contrasting requirements when analyzing this kind of data: large scale (slow) changes are 
-significant and must be looked at, but a rough
-running average with a window of many megabases might destroy interesting
-local detail. Here I present  a software (\gimli{}) which computes a multiscale segmentation 
-of DNA methylation 
-data acquired through WGBS and helps making sense of the data and comparing
-it across samples.
+Changes in methylation happen at different characteristic lengths 
+(see \eg{} \cite{methylseekr} for examples of short scale variations and
+\cite{largeblocks} for an analysis of long (millions of bases) blocks), and
+an adaptive algorithm such as the one presented here is one 
+way of taking this into account.
 
-A segmentation is a statistical model of a dataset  which takes into account its spatial distribution,
+A segmentation is a statistical model of a dataset  which 
+takes into account its spatial distribution,
 \ie{} adjacent points with similar properties are grouped together.
 In general, when building a statistical model one tries to find a reasonable 
 trade off between goodness of fit and complexity.
@@ -93,22 +134,22 @@ give a very simple model with, but likely a very bad fit;
 at the other using many segments of length $1$ would normally produce
 a well fitting but very complex summary of the data.
 The complexity of the model is linked to the typical scale of the segments used
-in the sense that if the expected size of a block is very large one needs few of them to 
-cover the genomic region under consideration.
+in the sense that if the expected size of a block is very large one 
+needs few of them to cover the genomic region under consideration.
 
 \section{The algorithm}
-The idea underpinning this method is, in its essence, to optimize  
+The software maximizes  
 a function $\psi$ which depends on the coordinates
 of each block as well as on the spatial distribution of the CpGs.
-Since the optimization is carried out
-in a greedy fashion there is no guarantee
-that it finds a global maximum, 
-but it will typically arrive at a value close enough to the optimal 
-one to be useful.
+%Since the optimization is carried out
+%in a greedy fashion there is no guarantee
+%that it finds a global maximum, 
+%but it will typically arrive at a value close enough to the optimal 
+%one to be useful.
 \subsection{Blocks and their likelihood}
-The  input to \gimli{} is a set of $N$ methylated positions 
-which do not specifically need to be CpGs.
-In the rest of the paper, though, I will refer to CpGs. Moreover 
+The  input to \gimli{} is a set of $N$ methylated positions;
+those do not specifically need to be CpGs although
+in the rest of the paper I will refer to CpGs. Moreover 
 I will call {\em block} or {\em segment} 
 both a single CpG or a set of contiguous CpGs. 
 Note that when I say contiguous I mean that they are one
@@ -118,10 +159,10 @@ indexed by $j=1,\dots,N$ : for example, for human chromosome $1$
 one has $N = 2284470$ in the human reference genome version $37$.
 This is the maximum number of loci that a WGBS experiment can capture: 
 in practice, even at a decent read depth,
-some of them do not appear in the sequencing result. 
+some of them will not appear in the sequencing results. 
 The number of nonconverted (respectively, converted) reads mapping at 
 position $j$ is $\overline{n}_j$ (respectively, $n_j$) : the methylation
-at CpG $j$ implied by the counts is $\frac{\overline{n}_j}{\overline{n}_j+n_j}$
+at CpG $j$ corresponding to the counts is $\hat{\theta}_j=\frac{\overline{n}_j}{\overline{n}_j+n_j}$
 
 The output of \gimli{} is a set of blocks 
 covering the initial positions 
@@ -157,7 +198,8 @@ n=\sum_{j=j_1}^{j_2} n_j
 \]
 
 I will use a boldface
-$\pmb{\theta}_i$ to refer to the vector of the methylation values of all the loci belonging to 
+$\pmb{\theta}_i$ to refer to the vector of the methylation values 
+of all the loci belonging to 
 block $i$.  
 The likelihood of such a block is defined as follows:
 
@@ -172,11 +214,14 @@ The likelihood of such a block is defined as follows:
 The way the program works is by 
 scanning repeatedly the list of blocks and evaluate whether any pair 
 of adjacent ones can be conveniently merged into one.  
-	This is decided by computing a function $\psi_{i,i+1}$ which is the sum of three terms:
+This is decided by computing a function $\psi_{i,i+1}$ which is the sum of three terms:
 the loss in likelihood consequent to the merging of $i$ and $i+1$ (denoted as $\Delta  \lik_{i,i+1}$),
 the reduction in complexity of the segmentation achieved by it (as measured by $\lambda$)
 and a distance penalty term $\rho_{i,i+1}$ which keeps into account the distance in base pairs of the two blocks
-being considered 
+being considered. These terms are somehow at odds with each other in the
+sense that the change in likelihood is always negative and one can think
+that the gain in simplicity of the model measured by $\lambda$ 
+compensates for this.
 The algorithm computes the index $i$ corresponding to the maximum
 values of 
 
@@ -188,9 +233,8 @@ I now explain each of the three above mentioned terms in detail.
 
 \subsection{likelihood change}
 
-
 To compute the change in likelihood corresponding to a merge operation, let 
-$\hat{\theta}_{i,i+1}$ be the mle estimation of methylation of 
+$\hat{\theta}_{i,i+1}$ be the  estimation of methylation of 
 a segment which includes
 all the loci in segments $i$ and $i+1$. Then one has:
 
@@ -200,97 +244,100 @@ all the loci in segments $i$ and $i+1$. Then one has:
 	-\lik_{i+1}(\hat{\theta}_{i+1}) \] 
 
 Note that $\Delta  \lik_{i,i+1} \leq 0$
-\subsection{reduction in the number of segments}
-the loss in likelihood this is counterbalanced, by the fact the the number 
-of segments decreases by $1$. This reduction in complexity is
-refelcted in the term $\lambda$ in the definition of $\psi$. $\lambda$
-is chosen by the user, and longer $\lambda$s allow one to connect
-regions with more divergetn methylation; this implies that the median length of
-the blocks increases with $\lambda$ as shown in figure~\ref{fig_boxplot_size}.
 
-\begin{figure}\label{fig_boxplot_size}
+\subsection{reduction in complexity}
+
+When the number of segments decreases by 1 the model becomes less complex
+and this is modeled by the term $\lambda$ in the definition of $\psi_{i,i+1}$.
+The size of this term is chosen by the user, and bigger $\lambda$s allow one to connect
+regions with more divergent methylation; this implies that the median length of
+the blocks should increase with $\lambda$ 
+( as it does : see figure ~\ref{fig_boxplot_size}).
+
+\begin{figure}
 \includegraphics[width=7cm,angle=270]{fig_boxplot_size.eps}
 \caption{Median length of blocks is higher at higher $\lambda$s.}
+\label{fig_boxplot_size}
 \end{figure}
 
 \subsection{sparsity of CpGs}
+
 Methylated sites are irregularly 
 spaced along the genome and the variability 
 introduced by the sequencing process usually increases the distance 
 between adjacent sites.
 To avoid building segments which span long regions where no CpGs exist, one 
-can subtract from the difference in likelihoods a sigmoidal penalty term of the
+can subtract from $\psi_{i,i+1}$ a sigmoidal penalty term of the
 form \[\rho_{i,i+1}=\frac{D_1}{1+\exp(-D_{i,i+1}/D_0)}-\frac{D_1}{2}\] (see fig\ref{figrho}) 
 where $D_{i,i+1}$ is the distance 
 between the the right end of segment $i$ and the left end of segment $i+1$ and 
 $D_0,D_1$ are constants which  I set heuristically to  $D_0=10000,D_1=100$. 
 
-\begin{figure}\label{figrho}
+\begin{figure}
 \includegraphics[width=7cm,angle=270]{figrho.eps}
 \caption{Empirical penalty factor $\rho$}
+\label{figrho}
 \end{figure}
 
-The software repeats the scanning and merging until $\psi_{i,i+1} \leq 0$ 
+The software repeats the scanning and merging until $\psi_{i,i+1} \leq 0\ \forall i$ 
 which means that it is not possible to 
-merge any more pair; after that it can either increment $\lambda$ and try again, 
+merge any more pair; after that it can either change $\lambda$ and try again, 
 or give up, print the segmentation and exit, depending on the command line parameters.
 
-The above procedure is similar to the one
-described in the context of copy number variation detection in \cite{vega} 
-( which, in turn, us an adaptation 
-of a 2 dimensional image analysis algorithm due to Mumford and Shah, 
+The above procedure owes a lot to the ideas described 
+in the context of copy number variation detection in \cite{vega} 
+(which, in turn, is an adaptation 
+of a 2D image analysis algorithm due to Mumford and Shah, 
 \cite{mumfordshah}) except that the probabilistic method  described
-here is more suitable for analyzing methylation data. This is because it 
-takes into account that the
+here is entirely different (the original approach does not use likelihood
+maximization at all) and I believe more suitable for analyzing methylation data.
+This is because it takes into account that the
 uncertainty with which we know $\hat{\theta}_i$ is higher when the read depth 
 is low and vice versa.
 This has an effect on the decision of merging adjacent blocks. I can show that 
 this is the case by simulating
-a the counts (at different read depths) for a pair of loci with 
-methylations respectively 
-$\theta_1=0.8$ and $\theta_2=0.45$,
+the counts (at different read depths) for a pair of loci with 
+methylations respectively $\theta_1=0.8$ and $\theta_2=0.45$,
 and computing the corresponding $\Delta  \lik$.  
 As figure \ref{fig_delta_cov} shows the difference in likelihood is higher 
 at higher read depth, when the methylation values are more precisely known.
 
 \section{Results}
 
-Reassuringly, the segments created by \gimli{} have lower methylation
+As a check that the algorithms actually does some meaningful work, I check that 
+the segments created by \gimli{} have lower methylation
 variability than random segments of the same length extracted from the 
-input dataset. 
-This is shown in \ref{fig_variance}.
+input dataset : this is shown in \ref{fig_variance}.
 
-\begin{figure}\label{fig_variance}
+\begin{figure}
 \includegraphics[width=7cm,angle=270]{fig_variance.eps}
 \caption{Variance across segments of $15$ contiguous CpGs when chosen at 
 random or 
 computed with \gimli{}. Methylation values from }
+\label{fig_variance}
 \end{figure}
 
-\begin{figure}\label{fig_delta_cov}
+\begin{figure}
 \includegraphics[width=7cm,angle=270]{fig_delta_cov.eps}
 \caption{$\Delta  \lik$ at fixed methylation difference depends on read depth.}
+\label{fig_delta_cov}
 \end{figure}
 
-While one can verify that the numbers computed by the algorithm are in 
-accordance with the description
-given in this paper, the purpose of \gimli{} is to help 
-detect automatically interesting biological patterns in methylation data, 
-and this can't be tested in any 
-precise sense. To show that \gimli{} is a useful tool
-though, I will give $4$ examples of analyses which can be produced very quickly
-using it. 
+In what follows I will give further examples of analyses 
+which can be 
+produced very quickly using it. 
 
 \subsection{PMD}
 
-First I will show how segmentation can help visualizing methylation data by choosing
-a stretch where many possible values of $\theta$ are present, a partially
-methylated domain (taken from \cite{pmd}) with coordinated 
-\texttt{chr10:112000000-122000000}. Here the data comes from the Blueprint sample \texttt{G199}. 
+Segmentations can help visualizing methylation data. Here I 
+depict a partially methylated stretch (taken from \cite{pmd})
+ with coordinates 
+\texttt{chr10:1.1885e8-1.1893e8}. Here the measurements come 
+from the Blueprint sample \texttt{G199}. 
 
-The figure below corresponds to segmenting the same genomic sub region \texttt{chr10:1.1885e8-1.1893e8} at 
-three different levels of coarseness encoded by the parameter $\lambda$ : 
-these three levels also broadly correspond to three different inherent spatial scales for the segmentation,and allow one to 
+I used three different levels of coarseness encoded by the parameter $\lambda$ : 
+these three levels also broadly correspond to three different inherent 
+spatial scales for the segmentation,and allow one to 
 see by eye interesting substructures. 
 
 \begin{figure}\label{fig_g199_pmd_chr10.eps}
@@ -298,16 +345,17 @@ see by eye interesting substructures.
 \caption{Partially methylated domain in chr10 segmented with $3$ incleasing $\lambda$s.}
 \end{figure}
 
-
 \subsection{Jumps}
 
-The boundary of the segments, (its  breakpoints)
+The boundary of the segments, (also known as their breakpoints)
 can correspond to landmarks in the genome. To show that this is the case, 
 I considered the 
 $4$ Blueprint monocytes \texttt{C000S5A1bs}, \texttt{C0010KA2bs},
 \texttt{C001UYA3bs} and \texttt{C004SQ51}.
-I computed their segmentation for $\lambda=10$ and looked for all the triples of consecutive segments
-with corresponding vectors methylation values $\pmb{\theta}_{1},\pmb{\theta}_{2},\pmb{\theta}_{3}$
+I computed their segmentation for $\lambda=10$ and looked for all the triples of 
+consecutive segments
+with corresponding vectors methylation values 
+$\pmb{\theta}_{1},\pmb{\theta}_{2},\pmb{\theta}_{3}$
 where 
 \begin{itemize}
 \item{} $\min \pmb{\theta}_1 \geq \max \pmb{\theta}_2 + 0.25$
@@ -321,7 +369,7 @@ high to low to high again,
 in jumps of at least $0.25$.
 See for example figure \ref{fig_jumps} 
 
-In this way I obtain $143$ such triplets. Looking at their central segmentes
+In this way I obtain $143$ such triplets. Looking at their central segments
 (those in a comparatively low methylation states) I find that their median length is
 $364$bp (minimum length $128$, maximum $733$). When I intersect this central segments with the Blueprint
 annotation, I find than $36$ overlap a transcription start site (as defined above), 
@@ -329,9 +377,10 @@ suggesting that regions with stark
 changes in methylation
 might sistematically correspond to regulated parts of the genome.
 
-\begin{figure}\label{fig_jumps}
+\begin{figure}
 \includegraphics[width=7cm,angle=270]{fig_jumps.eps}
 \caption{An example of high-low-high pattern found in chromosome $1$ by \gimli{}}
+\label{fig_jumps}
 \end{figure}
 
 \subsection{Differentially methylated regions}
@@ -354,39 +403,36 @@ monocytes & M0  \\
 \hline
 \end{tabular}
 \end{center}
-
-%monocytes: \texttt{C000S5A1bs},\texttt{C0010KA2bs},\texttt{C004SQ51},\texttt{C005PS51},\texttt{S000RD54},\texttt{S007G756}
-%M0 macrophages: \texttt{C005VG51},\texttt{S001S751},\texttt{S0039051},\texttt{S00BHQ51},\texttt{S00DVR51}
-
-
-As an example, we consider on one side the 
-first we consider all the positions where at least one of the samples has been measured
-(WGBS loses positions dependeing on the fluctuations in read depth typical of high throughput sequencing: 
+ 
+Note that I am looking at the positions where at least one of the samples has been 
+measured (WGBS loses positions dependeing on the fluctuations in read depth 
+typical of high throughput sequencing: 
 each sample is usually measured in a slightly different set of positions).
+Now, \gimli{} only accepts a single set of counts of nonconverted and converted 
+reads per position
+hence in order to run it on a group of samples I need to do some pre-processing:  
+first of all, I summarize the counts at each position (and in each group) 
+by first transforming them in an array of estimated 
+methylation values and then finding (by moment matching) a Beta 
+distribution which fits them. 
 
-Now, \gimli{} only accepts a single set of counts of nonconverted and converted reads per position
-hence in order to run it on a group of samples I need to do some pre-processing:  I 
-summarize the counts by first transforming them in an array of estimated methylation
-values and then finding (by moment matching) a beta distribution which fits them.
-
-The parameters of the Beta distribution can be interpreted as counts of 
-a non converted and converted reads (see for example \cite{methyldiff} for a full explanation) 
-of a single sample experiment giving the same methylation mean 
-and variance as a maximum likelihood estimation from the available samples.
+The parameters $\alpha,\beta$ of the Beta (rounded to the nearest integer) 
+can be interpreted as counts of 
+a non converted and converted reads (see for example \cite{methyldiff} for an
+introduction) of a single sample experiment having the same methylation 
+mean and variance as  the set of available samples in the group : in this
+way I end up with a file where to each position in each group there is associated only one
+pair of counts, for non converted and converted reads, and can run \gimli{}.
 
 To find the differentially methylated regions, I start by intersecting
-( with \texttt{bedtools}\cite{bedtools} ) the segmentation computed for the first group
-with the segmentation of the second : whenever two segments intersect I look
-for the ratio between the difference in average methylation in the common area 
-and the square root of the sum of the variances of the two samples divided by their respective
-sizes; one can then run a t-test.
-
-To tue purpose of illustrating how it might work I plot here a DMR 
-\texttt{chr1:27994303-27994356}.
+( using \texttt{bedtools}\cite{bedtools} ) the segmentation computed for 
+the first group with the segmentation of the second. 
 
 Notice that obviously one can compare segmentations corresponding to one sample
-each (so that the pre processing above is not needed). This could be useful, for example, 
-when contrasting pair of technical replicates agains each other.
+each (so that the pre processing above is not needed). 
+This could be useful, for example, 
+when contrasting pair of technical replicates 
+against each other.
 
 \section{Implementation}
 
@@ -398,7 +444,6 @@ methylation levels of the sample \texttt{C001UYA3bs} ($23815993$ CpGs)
 with $4$ different $\lambda$s ($1,10,100$ and $1000$).
 This includes the time for decompressing the input file and selecting some of its columns
 with \texttt{awk}.
-
 
 \bibliography{gimli_paper}
 \bibliographystyle{plain}
