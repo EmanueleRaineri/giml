@@ -1,6 +1,6 @@
-library(IRanges)
-library(GenomicRanges)
-library(plyr)
+#library(IRanges)
+#library(GenomicRanges)
+#library(plyr)
 
 libgimli = new.env()
 
@@ -13,11 +13,9 @@ libgimli$loglik<-function(nonconv , conv){
 	nc*theta+co*(1-theta)
 }
 
-libgimli$generic.loglik<-function(nonconv , conv, theta){
-	nc<-sum(nonconv)
-	co<-sum(conv)
-	dbinom(x=nc,size=nc+co,p=theta,log=T)+
-	nc*theta+co*(1-theta)
+libgimli$llik<-function(nonconv , conv, theta){
+	dbinom(x=nonconv,size=nonconv+conv,p=theta,log=T)+
+	nonconv*log(theta)+conv*log(1-theta)
 }
 
 

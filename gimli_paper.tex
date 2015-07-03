@@ -197,10 +197,6 @@ and
 n=\sum_{j=j_1}^{j_2} n_j
 \]
 
-I will use a boldface
-$\pmb{\theta}_i$ to refer to the vector of the methylation values 
-of all the loci belonging to 
-block $i$.  
 The likelihood of such a block is defined as follows:
 
 \begin{equation}
@@ -347,6 +343,10 @@ see by eye interesting substructures.
 
 \subsection{Jumps}
 
+Here below I will use a boldface
+$\pmb{\theta}_i$ to refer to the vector of the methylation values 
+of all the loci belonging to 
+block $i$.  
 The boundary of the segments, (also known as their breakpoints)
 can correspond to landmarks in the genome. To show that this is the case, 
 I considered the 
@@ -427,6 +427,9 @@ pair of counts, for non converted and converted reads, and can run \gimli{}.
 To find the differentially methylated regions, I start by intersecting
 ( using \texttt{bedtools}\cite{bedtools} ) the segmentation computed for 
 the first group with the segmentation of the second. 
+
+whenever the two segmentation intersect I compute (fo the overlap area)
+a likelihood ratio test
 
 Notice that obviously one can compare segmentations corresponding to one sample
 each (so that the pre processing above is not needed). 
