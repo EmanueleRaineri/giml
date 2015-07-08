@@ -108,9 +108,6 @@ $(DMR100): $(MONOWINDOWS100)  $(M0WINDOWS100)
 	paste $^ | awk '$$4!="-" && $$13!="-" && $$4>4 && ($$8+$$17)>0' | awk '{print $$1"\t"$$2"\t"$$3"\t"$$4"\t"$$7"\t"$$8"\t"$$13"\t"$$16"\t"$$17"\t"($$7-$$16)/sqrt($$8/$$4+$$17/$$13)}' > $@
 
 
-%.olap : %.intersect
-	awk '{lb=($$2>$$5)?$$2:$$5;ub=($$3>$$6)?$$6:$$3;print $$0"\t"lb"\t"ub}' $< > $@
-
 
 ~/Desktop/meth_data/C001UYA3bs.C000S5A1bs.gimli.1000.counts.1 :  /home/emanuele/Desktop/meth_data/C001UYA3bs_cpg.txt.gz ~/Desktop/meth_data/C001UYA3bs.C000S5A1bs.gimli.1000.olap
 	zcat /home/emanuele/Desktop/meth_data/C001UYA3bs_cpg.txt.gz | awk '{print
@@ -122,6 +119,9 @@ $(DMR100): $(MONOWINDOWS100)  $(M0WINDOWS100)
 ~/Desktop/meth_data/C001UYA3bs.C000S5A1bs.gimli.1000.counts: ~/Desktop/meth_data/C001UYA3bs.C000S5A1bs.gimli.1000.counts.1 ~/Desktop/meth_data/C001UYA3bs.C000S5A1bs.gimli.1000.counts.2
 	paste $^ | grep -v "-" | awk '{print $$6"\t"$$7"\t"$$17"\t"$$18}' > $@ 
 
+
+%.lrt: %.counts
+	Rscript likratiotest.R $< > $@
 
 .PHONY : clean
 
