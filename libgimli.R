@@ -40,7 +40,6 @@ libgimli$methyl.diff<-function(nc1,c1,nc2,c2){
 	libgimli$beta.diff (nc1+1 , c1+1 , nc2+1 , c2+1 )
 }
 
-
 libgimli$sim.counts<-function(d1,d2,size){
 	theta <- runif( size )
 	nc1   <- mapply( function( t ){ rbinom( 1, d1, t ) }, theta )
@@ -100,7 +99,7 @@ libgimli$load.meth<-function(fname){
 	return( meth )
 }
 
-libgimli$load.counts<-function(fname){
+libgimli$load.stripped<-function(fname){
 	meth.counts<-read.table(fname,stringsAsFactors=F)
 	names(meth.counts)<-c("chrom" , "pos" ,"nc", "c")
 	return ( meth.counts )
@@ -109,15 +108,11 @@ libgimli$load.counts<-function(fname){
 
 libgimli$load.dmr<-function( fname ){
 	dmr<-read.table( fname , stringsAsFactors=F )
-	names( dmr ) <- c( "chrom1",
-	"start1", "end1", "ncpgs1",
-	"min1", "mle1", "max1",
-	"lik1", "delta.lik1", "lambda1",
-	"chrom2", "start2", "end2", "ncpgs2",
-	"min2", "mle2", "max2",
-	"lik2", "delta.lik2", "lambda2",
-	"olap"
-	)
+	names( dmr ) <- c( "chrom",
+	"start", "end", "ncpgs1","ncpgs2",
+	"mle1", "mle2", "mle12",
+	"lik1", "lik2", "lik12",
+	"deltalik", "pval" )
 	return( dmr )
 }
 

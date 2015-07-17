@@ -31,7 +31,8 @@ for (i in 1:nrow(counts)){
 
 	lr<-2*(l1+l2-l12)
 	pval = 1.0 - pchisq(q=lr,df=1)
-	cat(counts[i,1],counts[i,2],counts[i,3],theta1,theta2,theta12,
+	cat(counts[i,1],counts[i,2],counts[i,3],length(nc1),length(nc2),
+	theta1,theta2,theta12,
         l1,l2,l12,lr,pval,sep="\t",fill=F)
 	cat("\n")
 }
