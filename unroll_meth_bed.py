@@ -32,13 +32,15 @@ for line in bedfile:
 	meth.append(float(fields[3]))
 	rd.append( int(fields[4]))
 bedfile.close()
-posfile=open(sys.argv[2])
-for line in posfile:
+
+for line in sys.stdin:
 	line = line.strip()
 	x    = int(line)
 	idx  = bin_search(lefts,x)
-	if (lefts[idx+1]<=x):
-		idx=idx+1
+	if (idx<(len(lefts)-1)):
+		if (lefts[idx+1]<=x):
+			idx=idx+1
+		
 	while (lefts[idx]>x):
 		idx=idx-1
 		if (idx==0):break
@@ -48,4 +50,3 @@ for line in posfile:
 		print "%d is not covered by the bed file"%x
 		sys.exit(1)
 
-posfile.close()		

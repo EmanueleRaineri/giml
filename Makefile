@@ -12,6 +12,9 @@ METH = $(DATA)/G199_cpg.chr1.txt.gz
 #GIMLICMD = ./gimli - 0.1:0.2:0.5:1:2:5:10:20:50:100:200:500:1000:2000:5000
 GIMLICMD = ./gimli - 1:10:100:1000
 
+lik_of_counts: lik_of_counts.ml
+	ocamlopt.opt -ccopt -static -o $@ str.cmxa $<
+
 gimli: gimli.c
 	gcc -Wall  -o $@ $^ -lm
 

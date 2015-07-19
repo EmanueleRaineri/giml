@@ -9,13 +9,11 @@ libgimli$loglik<-function(nonconv , conv){
 	nc<-sum(nonconv)
 	co<-sum(conv)
 	theta<-nc/(co+nc)
-	dbinom(x=nc,size=nc+co,p=theta,log=T)+
-	nc*theta+co*(1-theta)
+	dbinom(x=nc,size=nc+co,p=theta,log=T)
 }
 
 libgimli$llik<-function(nonconv , conv, theta){
-	dbinom(x=nonconv,size=nonconv+conv,p=theta,log=T)+
-	nonconv*log(theta)+conv*log(1-theta)
+	dbinom(x=nonconv,size=nonconv+conv,p=theta,log=T)
 }
 
 

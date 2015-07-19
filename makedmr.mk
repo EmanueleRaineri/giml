@@ -80,7 +80,8 @@ $(DDIR)/$(NAME1).$(NAME2).gimli.1000.counts.2 :  $(STRIPPED2) $(INTERSECT1000)
 
 %.counts: %.counts.1 %.counts.2
 	paste $^ | grep -v "-" |\
-	awk 'BEGIN{OFS="\t"}{print $$1,$$2,$$3,$$6,$$7,$$17,$$18}' > $@
+	awk 'BEGIN{OFS="\t"}{print $$1,$$2,$$3,$$6,$$7,$$17,$$18}' |\
+	./lik_of_counts > $@
 
 %.lrt: %.counts
 	Rscript likratiotest.R $< > $@
@@ -96,6 +97,6 @@ clean:
 	rm -f $(INTERSECT1000) $(DDIR)/$(NAME1).$(NAME2).gimli.*.counts.2
 	rm -f $(DDIR)/$(NAME1).$(NAME2).gimli.*.lrt 
 	rm -f $(GIMLI1) $(GIMLI2) $(DDIR)/$(NAME1).$(NAME2).gimli.*.counts
-	rm -f $(STRIPPED1) $(STRIPPED2)
+	#rm -f $(STRIPPED1) $(STRIPPED2)
 	rm -f $(DDIR)/$(NAME1).$(NAME2).gimli.*.dmr
 	rm -f $(GIMLI1).log $(GIMLI2).log
