@@ -97,8 +97,16 @@ libgimli$load.meth<-function(fname){
 	return( meth )
 }
 
+libgimli$line.count<-function(fname){
+	nl <- system(paste("zcat ",fstripped1," | wc -l "),intern=T)
+	nl<-as.numeric(strsplit(nl," ")[[1]][1])
+	return(nl)
+}
+
 libgimli$load.stripped<-function(fname){
-	meth.counts<-read.table(fname,stringsAsFactors=F)
+	nrows<-line.count(fname)
+	cat("line count ",nrows,"\n")
+	meth.counts<-read.table(fname,stringsAsFactors=F,nrows=nrows)
 	names(meth.counts)<-c("chrom" , "pos" ,"nc", "c")
 	return ( meth.counts )
 }
@@ -110,7 +118,7 @@ libgimli$load.dmr<-function( fname ){
 	"start", "end", "ncpgs1","ncpgs2",
 	"mle1", "mle2", "mle12",
 	"lik1", "lik2", "lik12",
-	"deltalik", "pval" )
+	 "pval" )
 	return( dmr )
 }
 

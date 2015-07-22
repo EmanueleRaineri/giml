@@ -15,9 +15,7 @@ WIN:=../../cpg_pipeline/gimli.windows
 
 .SECONDARY:
 
-
-
-dmrs: $(DDIR)/$(NAME1).$(NAME2).gimli.1000.dmr $(DDIR)/$(NAME1).$(NAME2).gimli.100.dmr
+dmrs: $(DDIR)/$(NAME1).$(NAME2).gimli.1000.dmr $(DDIR)/$(NAME1).$(NAME2).gimli.100.dmr $(DDIR)/$(NAME1).$(NAME2).gimli.10.dmr
 
 $(STRIPPED1): $(CPG1)
 	zcat $(CPG1) | \
@@ -58,29 +56,23 @@ $(INTERSECT10): $(GIMLI1) $(GIMLI2)
 	| awk '{lb=($$2>$$5)?$$2:$$5;ub=($$3>$$6)?$$6:$$3;print $$0"\t"lb"\t"ub}' \
 	> $@ 2>/dev/null
 
-$(DDIR)/$(NAME1).$(NAME2).gimli.100.counts.1 :  $(STRIPPED1) $(INTERSECT100)
-	zcat $< | \
-	$(WIN) <(awk '{print $$1"\t"$$(NF-1)"\t"$$NF}' $(INTERSECT100)) \
+$(DDIR)/$(NAME1).$(NAME2).gimli.%.counts.1 :  $(STRIPPED1) $(DDIR)/$(NAME1).$(NAME2).gimli.%.intersect
+	zcat $(STRIPPED1) | \
+	$(WIN) \
+	<(awk '{print $$1"\t"$$(NF-1)"\t"$$NF}'\
+		$(DDIR)/$(NAME1).$(NAME2).gimli.$*.intersect)\
 	> $@
 
-$(DDIR)/$(NAME1).$(NAME2).gimli.100.counts.2 :  $(STRIPPED2) $(INTERSECT100)
-	zcat $< |  \
-	$(WIN) <(awk '{print $$1"\t"$$(NF-1)"\t"$$NF}' $(INTERSECT100)) \
-	> $@
-
-$(DDIR)/$(NAME1).$(NAME2).gimli.1000.counts.1 :  $(STRIPPED1) $(INTERSECT1000)
-	zcat $< | \
-	$(WIN) <(awk '{print $$1"\t"$$(NF-1)"\t"$$NF}' $(INTERSECT1000)) \
-	> $@
-
-$(DDIR)/$(NAME1).$(NAME2).gimli.1000.counts.2 :  $(STRIPPED2) $(INTERSECT1000)
-	zcat $< |  \
-	$(WIN) <(awk '{print $$1"\t"$$(NF-1)"\t"$$NF}' $(INTERSECT1000)) \
+$(DDIR)/$(NAME1).$(NAME2).gimli.%.counts.2 :  $(STRIPPED2) $(DDIR)/$(NAME1).$(NAME2).gimli.%.intersect
+	zcat $(STRIPPED2) |  \
+	$(WIN) \
+	<(awk '{print $$1"\t"$$(NF-1)"\t"$$NF}'\
+		$(DDIR)/$(NAME1).$(NAME2).gimli.$*.intersect) \
 	> $@
 
 %.counts: %.counts.1 %.counts.2
 	paste $^ | grep -v "-" |\
-	awk 'BEGIN{OFS="\t"}{print $$1,$$2,$$3,$$6,$$7,$$17,$$18}' |\
+	awk 'BEGIN{OFS="\t"}{print $$1,$$2,$$3,$$6,$$7,$$19,$$20}' |\
 	./lik_of_counts > $@
 
 %.lrt: %.counts
@@ -93,10 +85,10 @@ $(DDIR)/$(NAME1).$(NAME2).gimli.1000.counts.2 :  $(STRIPPED2) $(INTERSECT1000)
 .PHONY: clean
 
 clean:
-	rm -f $(INTERSECT100) $(DDIR)/$(NAME1).$(NAME2).gimli.*.counts.1 
+	rm -f $(DDIR)/$(NAME1).$(NAME2).gimli.*.intersect
+	rm -f $(DDIR)/$(NAME1).$(NAME2).gimli.*.counts.1 
 	rm -f $(INTERSECT1000) $(DDIR)/$(NAME1).$(NAME2).gimli.*.counts.2
 	rm -f $(DDIR)/$(NAME1).$(NAME2).gimli.*.lrt 
 	rm -f $(GIMLI1) $(GIMLI2) $(DDIR)/$(NAME1).$(NAME2).gimli.*.counts
-	#rm -f $(STRIPPED1) $(STRIPPED2)
 	rm -f $(DDIR)/$(NAME1).$(NAME2).gimli.*.dmr
 	rm -f $(GIMLI1).log $(GIMLI2).log
