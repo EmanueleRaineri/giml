@@ -14,9 +14,11 @@ ANNOTATION=/scratch/devel/heath/Blueprint/gencode.v15.annotation.gtf.gz
 	awk '$$1==2' $< | cut -f 1 --complement > $@
 #for i in /scratch/devel/eraineri/gimli_test/*.jumps ; do echo ${i}; awk '$1==2' ${i} | cut -f 1 --complement > ${i}.2; done
 #intersect jumps from different samples
+
 monocytes.jumps.2.intersection.txt: $(GTEST)/C000S5A1bs_cpg.gimli.jumps.2 $(GTEST)/C0010KA2bs_cpg.gimli.jumps.2 $(GTEST)/C001UYA3bs_cpg.gimli.jumps.2 $(GTEST)/C004SQ51_cpg.gimli.jumps.2
 	bedtools multiinter -i <(awk '$$NF==10' $(GTEST)/C000S5A1bs_cpg.gimli.jumps.2) <(awk '$$NF==10' $(GTEST)/C0010KA2bs_cpg.gimli.jumps.2) <(awk '$$NF==10' $(GTEST)/C001UYA3bs_cpg.gimli.jumps.2) <(awk '$$NF==10' $(GTEST)/C004SQ51_cpg.gimli.jumps.2)  | awk '$$4==4' > $@ 
 #intersect with annotation
+
 gencode.v15.tss : $(ANNOTATION)
 	zcat $(ANNOTATION) | grep -ve "^#" |\
 	awk '$$3=="gene"' |\
@@ -28,7 +30,6 @@ monocytes.jumps.2.intersection.tss.txt: monocytes.jumps.2.intersection.txt genco
 	awk 'BEGIN{OFS="\t"}{print $0,$1"_"$2"_"$3}' |\
 	sort -k15,15 |\
 	uniq -f 14  > $@ 
-
 
 monocytes.jumps.2.intersection.annotated.txt:  monocytes.jumps.2.intersection.txt $(ANNOTATION)
 	bedtools intersect -a monocytes.jumps.2.intersection.txt -b <(zcat $(ANNOTATION) | awk 'BEGIN{OFS="\t"}{print $$1,$$4,$$5,$$3,$$14}') -wao > $@ 
