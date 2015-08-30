@@ -1,9 +1,0 @@
-joint.lik<-function(x1,size1,x2,size2){
-	l1<-dbinom(x=x1,size=size1,p=x1/size1,log=T)
-	l2<-dbinom(x=x2,size=size2,p=x2/size2,log=T)
-	l12<-dbinom(x=x1,size=size1,p=(x1/size1+x2/size2)/2,log=T)+dbinom(x=x2,size=size2,p=(x1/size1+x2/size2)/2,log=T)
-	print(l1)
-	print(l2)
-	print(l12)
-	print(l12-l1-l2)
-}

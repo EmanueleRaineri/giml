@@ -1,9 +1,0 @@
-1.at a given lambda, intervals should be non overlapping and have
-coordinates growing along the genome
-2.sum of lengths of all the intervals should not change when changing lambda and should be 
-the same as the length of the input file
-3.it should be possible to create artificial datasets such that they collapse to
-a single interval or
-4.they are impossible to collapse and remain separated points
-5.sum of cpgs at each lambda should be tha same as number of lines
-in input file
