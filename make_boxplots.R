@@ -1,4 +1,5 @@
-gimlifile<-read.table("~/Desktop/meth_data/C001UYA3bs_cpg.chr1.gimli")
+fnames<-commandArgs(trailingOnly=T)
+gimlifile<-read.table(fnames[1])
 colors<-rainbow(4)
 postscript("fig_boxplot_size.eps")
 boxplot((V3-V2+1)~V12,data=gimlifile,border="red",log="y",

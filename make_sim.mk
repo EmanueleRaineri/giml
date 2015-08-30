@@ -16,7 +16,7 @@ all : $(DDIR)/fake1_cpg.stripped.txt.gz\
 	$(STRIPPED500000)
 
 $(BED1):
-	echo "chr1\t1\250000000\t0.9\t30\n" > $@
+	echo "chr1\t1\t250000000\t0.9\t30" > $@
 
 $(BED500): make_fake2_bed.py
 	python $< $(BED500) 500 
@@ -65,4 +65,4 @@ $(STRIPPED500000): $(DDIR)/C000S5A1bs_cpg.txt.gz $(DDIR)/fake2.500000.bed
 .PHONY: clean
 
 clean: 
-	rm -f fake*.bed fake*_cpg.stripped.txt.gz
+	rm -f $(DDIR)/fake*.bed $(DDIR)/fake*_cpg.stripped.txt.gz

@@ -1,20 +1,17 @@
 source("libgimli.R")
 args<-commandArgs(trailingOnly = TRUE)
 
-meth.counts<-libgimli$load.counts(args[1])
-
+meth.counts<-libgimli$load.stripped(args[1])
 segs<-libgimli$load.segments(args[2])
 segs.10<-segs[segs$lambda==10 & segs$start>1e8,]
 segs.100<-segs[segs$lambda==100 & segs$start>1e8,]
 segs.1000<-segs[segs$lambda==1000 & segs$start>1e8,]
-
 
 cat("# lambda=10:",nrow(segs.10),"\n")
 cat("# lambda=100:",nrow(segs.100),"\n")
 cat("# lambda=1000:",nrow(segs.1000),"\n")
 lb <- 1.1885e8
 ub <- 1.1893e8
-
 
 theta<-meth.counts$nc/(meth.counts$nc+meth.counts$c)
 postscript(args[3])

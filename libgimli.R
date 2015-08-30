@@ -4,7 +4,6 @@
 
 libgimli = new.env()
 
-#math
 libgimli$loglik<-function(nonconv , conv){
 	nc<-sum(nonconv)
 	co<-sum(conv)
@@ -15,7 +14,6 @@ libgimli$loglik<-function(nonconv , conv){
 libgimli$llik<-function(nonconv , conv, theta){
 	dbinom(x=nonconv,size=nonconv+conv,p=theta,log=T)
 }
-
 
 libgimli$smooth.meth<-function( meth , bw=1000 , n.points=1000) {
 	res<-ksmooth(meth$pos, 
@@ -76,7 +74,6 @@ libgimli$delta.lik<-function(nc1,c1,nc2,c2){
 	l2<-lik.segment(nc2,c2)
 	return ( ml - l1 - l2 )
 }
-
 #I/O
 
 libgimli$load.segments<-function(fname){
@@ -98,7 +95,11 @@ libgimli$load.meth<-function(fname){
 }
 
 libgimli$line.count<-function(fname){
-	nl <- system(paste("zcat ",fstripped1," | wc -l "),intern=T)
+	if (grepl(".gz",fname)) 
+		cmd<-"zcat "
+	else 
+		cmd<-"cat "
+	nl <- system(paste(cmd , fname," | wc -l "),intern=T)
 	nl<-as.numeric(strsplit(nl," ")[[1]][1])
 	return(nl)
 }
@@ -110,6 +111,8 @@ libgimli$load.stripped<-function(fname){
 	names(meth.counts)<-c("chrom" , "pos" ,"nc", "c")
 	return ( meth.counts )
 }
+
+
 
 
 libgimli$load.dmr<-function( fname ){
