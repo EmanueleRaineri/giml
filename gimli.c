@@ -19,7 +19,7 @@
 typedef struct table{
 	char* chrom;
 	float*  theta;
-	float*  loglik;
+	//float*  loglik;
 	int*    pos;
 	int*    nc;
 	int*    c;
@@ -198,14 +198,15 @@ void delta_lik( node* el, table* data ){
 	el->delta = (el->delta)-dpen;
 }
 
-void fill_node(node* el, table* data, int i){
+void init_node(node* el, table* data, int i){
 		/*
 			this fills the node when it contains on locus only,
 			during the initial upload of the input file
 		*/
 		el->from = i;
 		el->to   = i;
-		el->loglik = data->loglik[i];
+		el->loglik= dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
+		//el->loglik = data->loglik[i];
 		el->delta = 0 ;
 		el->segment_id = i;	
 		el->sum_nc = data->nc[i];
@@ -215,7 +216,57 @@ void fill_node(node* el, table* data, int i){
 		el->var  = 0.0;
 }
 
+int table_of_file(FILE* in, char* buffer ,table* data ,int* status){
+	char* refchr = malloc( LINE*sizeof(char) );
+	char* tmp = malloc( LINE*sizeof(char) );
+	sscanf( buffer , "%s %*d %*d %*d" , refchr );
+	fprintf( stderr , "refchr:%s\n" , refchr );
+	int i=0;
+	while(1){
+		if ( i >= MAXLINES){
+			fprintf(stderr,"too many positions in chr\n");
+			exit(1);
+		}
+		sscanf( buffer , "%s %*d %*d %*d" , tmp );	
+		if( strcmp( tmp , refchr ) !=0 ) { *status = CHANGE_CHROM; break; }
+		sscanf(buffer,"%s %d %d %d",data->chrom,data->pos+i,data->nc+i,data->c+i);
+		data->segment_id[i] = i;
+		data->theta[i]  = (float)data->nc[i]/(data->nc[i]+data->c[i]);
+		if (data->nc[i]+data->c[i] > 0) {i++;}
+		else {fprintf(stderr,"skipping (%s\t%d)\n",data->chrom,data->pos[i]);}
+		buffer = fgets(buffer,LINE,in);
+		if (feof(in)) { *status=FILE_END; break; }
+		if (NULL == buffer){
+			fprintf(stderr,"problem in reading input\n");
+			exit(1);
+		}
+	}
+	free(refchr); free(tmp);
+	refchr=NULL; tmp=NULL;
+	return i;
+}
+
+node* list_of_table( node * head, table* data, int le ){
+	node* el = head;
+	int i;
+	for (i=0;i<le;i++){
+		init_node(el,data,i);
+		el->next = malloc(sizeof(node));
+		if (el->next==NULL){
+			fprintf(stderr,"out of memory at line %d\n",__LINE__);
+			exit(1);
+		}
+		el->next->prev = el;
+		el = el->next;
+	}
+	el->prev->next=NULL;
+	free(el);
+	return head;
+}
+
 int list_of_file( FILE* in, char* buffer , node* head, table* data ,int* status ){
+	//this function does too much.
+	//split into fill table and create list
 	char* refchr = malloc( LINE*sizeof(char) );
 	char* tmp = malloc( LINE*sizeof(char) );
 	sscanf( buffer , "%s %*d %*d %*d" , refchr );
@@ -235,8 +286,8 @@ int list_of_file( FILE* in, char* buffer , node* head, table* data ,int* status 
 		sscanf(buffer,"%s %d %d %d",data->chrom,data->pos+i,data->nc+i,data->c+i);
 		data->segment_id[i] = i;
 		data->theta[i]  = (float)data->nc[i]/(data->nc[i]+data->c[i]);
-		data->loglik[i] = dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
-		fill_node(el,data,i);
+		//data->loglik[i] = dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
+		init_node(el,data,i);
 		el->next = malloc(sizeof(node));
 		if (el->next==NULL){
 			fprintf(stderr,"out of memory at line %d\n",__LINE__);
@@ -289,16 +340,18 @@ void free_list(node* head){
 int print_segmentation(FILE* stream, node* head, float lambda, table* data, float* totloglik ){
 	node *el;
 	int i,n,le=0;
-	float mintheta,maxtheta,t,adjlik;
+	float mintheta,maxtheta,t;//,adjlik;
 	*totloglik=0;
 	for( el=head; el!=NULL; el=el->next ){
 		n = el->to-el->from+1;
-		mintheta=FLT_MAX;maxtheta=-FLT_MAX;adjlik=0;
+		mintheta=FLT_MAX;
+		maxtheta=-FLT_MAX;
+		//adjlik=0;
 		for ( i=el->from; i<=el->to; i++ ){
 			t=data->theta[i];
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
-			adjlik+=data->loglik[i];
+			//adjlik+=data->loglik[i];
 		}
 		*totloglik+=el->loglik;
 		fprintf( stream , "%s\t%d\t%d\t%d\t" ,
@@ -308,7 +361,9 @@ int print_segmentation(FILE* stream, node* head, float lambda, table* data, floa
 		fprintf(stream,"%.4f\t%.4g\t", 
 			el->mean,el->var);
 		fprintf(stream,"%.4g\t%.4g\t%.4f\n",
-			el->loglik-adjlik, el->delta, lambda );
+			el->loglik, 
+			//el->loglik-adjlik, 
+			el->delta, lambda );
 		le++;
 	}
 	return(le);
@@ -509,7 +564,7 @@ void free_all(node* head, table* data, heap* h){
 	free_list( head );
 	free( data->chrom );      
 	free( data->theta );      
-	free( data->loglik );     
+	//free( data->loglik );     
 	free( data->pos );       
 	free( data->nc );       
 	free( data->c );
@@ -596,7 +651,7 @@ read:
 	data             = malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
-	data->loglik     = malloc(MAXLINES*sizeof(float));
+	//data->loglik     = malloc(MAXLINES*sizeof(float));
 	data->pos        = malloc(MAXLINES*sizeof(int));
 	data->nc         = malloc(MAXLINES*sizeof(int));
 	data->c          = malloc(MAXLINES*sizeof(int));
@@ -605,11 +660,13 @@ read:
 	head = malloc(sizeof(node));
 	head->prev = NULL;
 
-	nlines = list_of_file( in, buffer,  head  , data, &status );
+	nlines = table_of_file(in, buffer,  data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
+	head = list_of_table( head, data, nlines);	
+	//nlines = list_of_file( in, buffer,  head  , data, &status );
 	
 	data->theta      =  realloc( data->theta , nlines*sizeof(float) );
-	data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
+	//data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
 	data->pos        =  realloc( data->pos , nlines*sizeof(int) );
 	data->nc         =  realloc( data->nc , nlines*sizeof(int) );
 	data->c          =  realloc( data->c ,  nlines*sizeof(int) );
@@ -717,6 +774,7 @@ read:
 		case FILE_END:
 			break;
 		case CHANGE_CHROM:
+			fprintf(stderr,"change of chromosome\n");
 			ilambda = 0;
 			goto read;
 			break;
