@@ -19,7 +19,6 @@
 typedef struct table{
 	char* chrom;
 	float*  theta;
-	//float*  loglik;
 	int*    pos;
 	int*    nc;
 	int*    c;
@@ -54,10 +53,6 @@ typedef struct heap{
 float rho(int d){
 	float dpen;
 	dpen = D1/(1+exp(-d/D0))-D1/2;
-	/*if ( dpen < 1 ){
-		fprintf(stderr,"dpen<1 : %f\n",dpen);
-		exit(1);
-	}*/
 	if ( dpen > FLT_MAX ){
 		fprintf(stderr,"dpen>FLT_MAX : %f with d:%d\n",dpen,d);
 		exit(1);
@@ -65,11 +60,11 @@ float rho(int d){
 	return dpen;
 }
 
-float dbinom(int x, int size, float p){
+float logbinom(int x, int size, float p){
 	if (p==1){
 		if (x==size) return 0;
 		else {
-			fprintf(stderr,"invalid dbinom call x:%d size:%d p:%f\n",
+			fprintf(stderr,"invalid logbinom call x:%d size:%d p:%f\n",
 			x,size,p);
 			exit(1);
 		}
@@ -77,7 +72,7 @@ float dbinom(int x, int size, float p){
 	if (p==0){
 		if (x==0) return 0;
 		else {
-			fprintf(stderr,"invalid dbinom call x:%d size:%d p:%f\n",
+			fprintf(stderr,"invalid logbinom call x:%d size:%d p:%f\n",
 			x,size,p);
 			exit(1);
 		}
@@ -148,16 +143,36 @@ void update_lik(node* el, table* data){
 	}
 	el->loglik=0;
 	for( i = el->from; i <= el->to; i++ ){
-		el->loglik += dbinom( nc[i] , nc[i]+c[i] , el->mletheta );
+		el->loglik += logbinom( nc[i] , nc[i]+c[i] , el->mletheta );
 	}
 	mean_var(el, data, &(el->mean),&(el->var));
 }
 
-void delta_lik( node* el, table* data ){
-	int i,sum_nc,sum_c;
+float lik_merge( node* el, table* data ){
+	if (el->next == NULL) {
+		fprintf(stderr,
+			"el->next==NULL in delta_lik (el->delta=%.4f)\n",
+			el->delta);
+		return -FLT_MAX;
+	}
 	float mletheta;
-	int* nc=data->nc;
-	int* c = data->c;
+	float lm=0;
+	int i,sum_nc,sum_c;
+	sum_nc=el->sum_nc+el->next->sum_nc;
+	sum_c = el->sum_c+el->next->sum_c;
+	mletheta=(float)sum_nc/(sum_c+sum_nc);
+	for( i = el->from; i <= el->next->to; i++ ){
+		lm+=logbinom(data->nc[i],data->nc[i]+data->c[i],mletheta);
+	}
+	return lm;
+}
+
+void delta_lik( node* el, table* data ){
+	//int i;
+	int sum_nc,sum_c;
+	float mletheta;
+	//int* nc=data->nc;
+	//int* c = data->c;
 	int d;
 	float dpen;
 	if (el->next == NULL) {
@@ -175,12 +190,16 @@ void delta_lik( node* el, table* data ){
 		print_node(el->next,data->pos);
 		exit(1);
 	}
-	el->delta=0;
+	
+	/* el->delta=0;
 	for( i = el->from; i <= el->next->to; i++ ){
-		el->delta+=dbinom(nc[i],nc[i]+c[i],mletheta);
+		el->delta+=logbinom(nc[i],nc[i]+c[i],mletheta);
 	}
-	el->delta = el->delta - el->loglik - el->next->loglik ;
-	if (el->delta>FLT_EPSILON){
+	el->delta = el->delta - el->loglik - el->next->loglik ; */
+	
+	el->delta = lik_merge( el , data ) - el->loglik - el->next->loglik ;
+	
+	if (el->delta > FLT_EPSILON){
 		fprintf( stderr, "warning: delta_lik:invalid el->delta %g\n" , 
 			el->delta );
 		print_node(el,data->pos);
@@ -205,8 +224,7 @@ void init_node(node* el, table* data, int i){
 		*/
 		el->from = i;
 		el->to   = i;
-		el->loglik= dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
-		//el->loglik = data->loglik[i];
+		el->loglik= logbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
 		el->delta = 0 ;
 		el->segment_id = i;	
 		el->sum_nc = data->nc[i];
@@ -264,71 +282,6 @@ node* list_of_table( node * head, table* data, int le ){
 	return head;
 }
 
-int list_of_file( FILE* in, char* buffer , node* head, table* data ,int* status ){
-	//this function does too much.
-	//split into fill table and create list
-	char* refchr = malloc( LINE*sizeof(char) );
-	char* tmp = malloc( LINE*sizeof(char) );
-	sscanf( buffer , "%s %*d %*d %*d" , refchr );
-	fprintf( stderr , "refchr:%s\n" , refchr );
-	node* el = head;
-	int i=0;
-	while(1){
-		if ( i >= MAXLINES){
-			fprintf(stderr,"too many positions in chr\n");
-			exit(1);
-		}
-		sscanf( buffer , "%s %*d %*d %*d" , tmp );	
-		if( strcmp( tmp , refchr ) !=0 ) {
-			*status = CHANGE_CHROM;
-			break;
-		}
-		sscanf(buffer,"%s %d %d %d",data->chrom,data->pos+i,data->nc+i,data->c+i);
-		data->segment_id[i] = i;
-		data->theta[i]  = (float)data->nc[i]/(data->nc[i]+data->c[i]);
-		//data->loglik[i] = dbinom(data->nc[i],data->nc[i]+data->c[i],data->theta[i]);
-		init_node(el,data,i);
-		el->next = malloc(sizeof(node));
-		if (el->next==NULL){
-			fprintf(stderr,"out of memory at line %d\n",__LINE__);
-			exit(1);
-		}
-		el->next->prev = el;
-		el = el->next;
-		i++;
-		buffer = fgets(buffer,LINE,in);
-		if (feof(in)) {
-			*status=FILE_END;
-			break;
-		}
-		if (NULL == buffer){
-			fprintf(stderr,"problem in reading input\n");
-			exit(1);
-		}
-	}
-	switch(*status){
-		case FILE_END:
-			if (el->prev==NULL){
-				fprintf(stderr,"el->prov is NULL\n");
-				exit(1);
-			}
-			el->prev->next=NULL;
-			free(el); el=NULL;
-			break;
-		case CHANGE_CHROM:
-			el->prev->next=NULL;	
-			free(el);
-			el=NULL;
-			break;
-		default:
-			fprintf(stderr,"illegal status:%d at line %d\n",*status,__LINE__);
-			exit(1);
-	}
-	free(refchr); free(tmp);
-	refchr=NULL; tmp=NULL;
-	return i;
-}
-
 void free_list(node* head){
 	node* el;
 	for(el=head->next;el!=NULL;el=el->next){
@@ -346,12 +299,10 @@ int print_segmentation(FILE* stream, node* head, float lambda, table* data, floa
 		n = el->to-el->from+1;
 		mintheta=FLT_MAX;
 		maxtheta=-FLT_MAX;
-		//adjlik=0;
 		for ( i=el->from; i<=el->to; i++ ){
 			t=data->theta[i];
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
-			//adjlik+=data->loglik[i];
 		}
 		*totloglik+=el->loglik;
 		fprintf( stream , "%s\t%d\t%d\t%d\t" ,
@@ -362,7 +313,6 @@ int print_segmentation(FILE* stream, node* head, float lambda, table* data, floa
 			el->mean,el->var);
 		fprintf(stream,"%.4g\t%.4g\t%.4f\n",
 			el->loglik, 
-			//el->loglik-adjlik, 
 			el->delta, lambda );
 		le++;
 	}
@@ -564,7 +514,6 @@ void free_all(node* head, table* data, heap* h){
 	free_list( head );
 	free( data->chrom );      
 	free( data->theta );      
-	//free( data->loglik );     
 	free( data->pos );       
 	free( data->nc );       
 	free( data->c );
@@ -651,7 +600,6 @@ read:
 	data             = malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
-	//data->loglik     = malloc(MAXLINES*sizeof(float));
 	data->pos        = malloc(MAXLINES*sizeof(int));
 	data->nc         = malloc(MAXLINES*sizeof(int));
 	data->c          = malloc(MAXLINES*sizeof(int));
@@ -663,10 +611,8 @@ read:
 	nlines = table_of_file(in, buffer,  data, &status );
 	fprintf(stderr,"nlines:%d\n",nlines);
 	head = list_of_table( head, data, nlines);	
-	//nlines = list_of_file( in, buffer,  head  , data, &status );
 	
 	data->theta      =  realloc( data->theta , nlines*sizeof(float) );
-	//data->loglik     =  realloc( data->loglik ,  nlines*sizeof(float) );
 	data->pos        =  realloc( data->pos , nlines*sizeof(int) );
 	data->nc         =  realloc( data->nc , nlines*sizeof(int) );
 	data->c          =  realloc( data->c ,  nlines*sizeof(int) );
