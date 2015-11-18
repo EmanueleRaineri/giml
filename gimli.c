@@ -220,6 +220,8 @@ float delta_lik( node* el, table* data ){
 
 void set_psi(node* el, table * data){
 	if (el->next==NULL) {
+		el->deltalik=-INFINITY;
+		el->dpen=INFINITY;
 		el->psi=-INFINITY;
 		return;
 	}
@@ -603,16 +605,9 @@ read:
 	el=head;
 	/* initialize nodes in the list computing delta L to next node */	
 	while(1){
-		if ( el->next == NULL ) {
-			el->deltalik=-INFINITY;
-			el->dpen=INFINITY;
-			el->psi = -INFINITY;
-			heap_insert( h , el );
-			break;
-		}
 		set_psi(el ,data);
 		heap_insert( h , el );
-		assert ( heap_wrong_index(h)==0 );
+		if ( el->next == NULL ) break;
 		el = el->next;
 	}
 	fprintf(stderr,"done\n");
@@ -622,23 +617,30 @@ read:
 	while(1){
 		loopc++;
 		maxn = heap_extract_max(h);
+		// XXX dubious
 		if (maxn->prev==NULL && maxn->next==NULL) {
 			for (i=ilambda; i<nlambda;i++){
 				le = print_segmentation(stdout, head , lambda[i] , data, &totloglik );
 			}
 			break;
 		}
-		curlambda=lambda[ilambda];
+		curlambda = lambda[ilambda];
 		gain = maxn->psi + curlambda;
+		fprintf( stderr,
+		"%s\t%d:%d->%d\t%f\t%f\t%f\t%g\t%f\t%s\n",
+			data->chrom,
+			maxn->segment_id, maxn->from, maxn->to,
+			maxn->deltalik, maxn->dpen, maxn->psi,
+			curlambda, gain, gain>0?"m":"o" ); 
 		if ( gain >=0 ){
 			/* merge maxn with the following node */
 			mergec++;
-			tmpnext=maxn->next;
-			assert(tmpnext != NULL);
+			tmpnext = maxn->next;
+			assert( tmpnext != NULL );
 			for( i= tmpnext->from ; i <= tmpnext->to ; i++ ){
 					data->segment_id[i] = maxn->segment_id;
 			}
-			merge(maxn,  tmpnext,  h,  data);
+			merge( maxn, tmpnext, h, data );
 		} else { // can't merge, deltalik<0
 			heap_insert( h , maxn );
 			le = print_segmentation(stdout, head , curlambda , data, &totloglik );
@@ -646,12 +648,6 @@ read:
 			if ( ilambda < ( nlambda - 1 ) ) ilambda++;
 			else break;
 		}	
-		fprintf( stderr,
-		"%s\t%d:%d->%d\t%f\t%f\t%f\t%g\t%f\t%s\n",
-			data->chrom,
-			maxn->segment_id, maxn->from, maxn->to,
-			maxn->deltalik, maxn->dpen, maxn->psi,
-			curlambda, gain, gain>0?"m":"o" ); 
 	}
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
 	free_all(head,data,h);
