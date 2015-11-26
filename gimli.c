@@ -76,8 +76,6 @@ float dist_pen(node* el, table* data){
 	return(rho(x));
 }
 
-
-
 float logbinom(int x, int size, float p){
 	if (p==1){
 		if (x==size) return 0;
@@ -210,8 +208,8 @@ float delta_lik( node* el, table* data ){
 	dlik = lik_merge( el , data ) - el->loglik - el->next->loglik ;
 	if (dlik > FLT_EPSILON){
 		fprintf( stderr, 
-		"warning: delta_lik:invalid dlik %g\t%g\t%g\n" , 
-		 lik_merge(el,data), el->loglik, el->next->loglik );
+		"warning: delta_lik:invalid dlik (%g)-(%g)-(%g)=%g\n" , 
+		 lik_merge(el,data), el->loglik, el->next->loglik, dlik );
 		print_node(el,data->pos);
 		print_node(el->next,data->pos);
 	}
@@ -304,13 +302,23 @@ void free_list(node* head){
 	free(el);
 }
 
+void prettyprint(FILE* stream, int* v, int start, int end, char sep){
+	int i;
+	for ( i=start; i<end ; i++ ){
+		fprintf(stream,"%d%c",v[i],sep);			
+	}
+	fprintf(stream,"%d",v[end]);			
+}
+
+
 int print_segmentation(FILE* stream, node* head, float lambda, table* data, float* totloglik ){
 	node *el;
-	int i,n,le=0;
+	int i,le=0;
+	//int n;
 	float mintheta,maxtheta,t;//,adjlik;
 	*totloglik=0;
 	for( el=head; el!=NULL; el=el->next ){
-		n = el->to-el->from+1;
+		//n = el->to-el->from+1;
 		mintheta=INFINITY;
 		maxtheta=-INFINITY;
 		for ( i=el->from; i<=el->to; i++ ){
@@ -318,17 +326,26 @@ int print_segmentation(FILE* stream, node* head, float lambda, table* data, floa
 			if (t>maxtheta) maxtheta=t;
 			if (t<mintheta) mintheta=t;
 		}
-		*totloglik+=el->loglik;
-		fprintf( stream , "%s\t%d\t%d\t%d\t" ,
-		data->chrom,data->pos[el->from],data->pos[el->to],n);
-		fprintf(stream,"%.4f\t%.4f\t%.4f\t", 
-			mintheta,el->mletheta,maxtheta);
-		fprintf(stream,"%.4f\t%.4g\t", 
-			el->mean,el->var);
-		fprintf(stream,"%.4g\t%.4g\t%.4f\n",
-			el->loglik, 
-			el->psi, lambda );
-		le++;
+		
+		//*totloglik+=el->loglik;
+		//fprintf( stream , "%s\t%d\t%d\t%d\t" ,
+		//data->chrom,data->pos[el->from],data->pos[el->to],n);
+		//fprintf(stream,"%.4f\t%.4f\t%.4f\t", 
+		//	mintheta,el->mletheta,maxtheta);
+		//fprintf(stream,"%.4f\t%.4g\t", 
+		//	el->mean,el->var);
+		//fprintf(stream,"%.4g\t%.4g\t%.4f\n",
+		//	el->loglik, 
+		//	el->psi, lambda );
+		//le++;
+		fprintf( stream , "%s\t%d\t%d\t%g\t" ,
+		data->chrom,data->pos[el->from],data->pos[el->to],lambda);
+		prettyprint(stream,data->pos,el->from,el->to,':');
+		fprintf(stream,"\t");
+		prettyprint(stream,data->nc,el->from,el->to,':');
+		fprintf(stream,"\t");
+		prettyprint(stream,data->c,el->from,el->to,':');
+		fprintf(stream,"\n");
 	}
 	return(le);
 }
@@ -555,30 +572,23 @@ int main(int argc, char* argv[]){
 			ref = c;
 		}
 	}
-
 	fprintf( stderr , "%d lambda(s)\n", nlambda );
 	for( i=0; i<nlambda; i++ ){
 		fprintf(stderr, "lambda[%d]=%.4g\n",i,lambda[i]);				
 	}
-
 	table* data;
-	
 	int ilambda=0,status=CHANGE_CHROM ;
 	node* el, *head;
 	heap* h;	
 	node* maxn;
 	node* tmpnext;
-	
 	buffer = fgets(buffer,LINE,in);
-
 	if (buffer==NULL || feof(in)){
 		fprintf(stderr,"can't read from input file\n");
 		fprintf(stderr,"feof status:%d\n",feof(in));
 		exit(1);
 	}
-	
 read:
-
 	data             = malloc(sizeof(table));
 	data->chrom      = malloc(LINE);
 	data->theta      = malloc(MAXLINES*sizeof(float));
@@ -651,7 +661,6 @@ read:
 	}
 	fprintf( stderr , "%d loop(s) %d merging operation(s)\n" , loopc, mergec );
 	free_all(head,data,h);
-	
 	switch(status){
 		case FILE_END:
 			break;
@@ -664,7 +673,6 @@ read:
 			fprintf(stderr, "illegal status:%d at line %d\n", status, __LINE__ );
 			exit(1);
 	}
-	
 	if ( in != stdin ) fclose( in );
 	free( buffer );
 	return( 0 );
