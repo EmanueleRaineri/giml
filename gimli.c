@@ -311,41 +311,15 @@ void prettyprint(FILE* stream, int* v, int start, int end, char sep){
 }
 
 
-int print_segmentation(FILE* stream, node* head, float lambda, table* data, float* totloglik ){
+int print_segmentation(FILE* stream, node* head, float lambda, table* data ){
 	node *el;
-	int i,le=0;
-	//int n;
-	float mintheta,maxtheta,t;//,adjlik;
-	*totloglik=0;
+	int le=0;
 	for( el=head; el!=NULL; el=el->next ){
-		//n = el->to-el->from+1;
-		mintheta=INFINITY;
-		maxtheta=-INFINITY;
-		for ( i=el->from; i<=el->to; i++ ){
-			t=data->theta[i];
-			if (t>maxtheta) maxtheta=t;
-			if (t<mintheta) mintheta=t;
-		}
-		
-		//*totloglik+=el->loglik;
-		//fprintf( stream , "%s\t%d\t%d\t%d\t" ,
-		//data->chrom,data->pos[el->from],data->pos[el->to],n);
-		//fprintf(stream,"%.4f\t%.4f\t%.4f\t", 
-		//	mintheta,el->mletheta,maxtheta);
-		//fprintf(stream,"%.4f\t%.4g\t", 
-		//	el->mean,el->var);
-		//fprintf(stream,"%.4g\t%.4g\t%.4f\n",
-		//	el->loglik, 
-		//	el->psi, lambda );
-		//le++;
-		fprintf( stream , "%s\t%d\t%d\t%g\t" ,
-		data->chrom,data->pos[el->from],data->pos[el->to],lambda);
-		prettyprint(stream,data->pos,el->from,el->to,':');
-		fprintf(stream,"\t");
-		prettyprint(stream,data->nc,el->from,el->to,':');
-		fprintf(stream,"\t");
-		prettyprint(stream,data->c,el->from,el->to,':');
-		fprintf(stream,"\n");
+		le++;
+		fprintf( stream , "%s\t%d\t%d\t%g\t%d\t%d" ,
+		data->chrom, data->pos[el->from], data->pos[el->to], 
+		lambda, el->from, el->to );
+		fprintf( stream, "\n" );
 	}
 	return(le);
 }
@@ -622,18 +596,18 @@ read:
 	}
 	fprintf(stderr,"done\n");
 	int loopc=0;
-	float curlambda,gain,totloglik=0;
+	float curlambda,gain;
 	mergec = 0;	
 	while(1){
 		loopc++;
 		maxn = heap_extract_max(h);
 		// XXX dubious
-		if (maxn->prev==NULL && maxn->next==NULL) {
-			for (i=ilambda; i<nlambda;i++){
-				le = print_segmentation(stdout, head , lambda[i] , data, &totloglik );
-			}
-			break;
-		}
+		//if (maxn->prev==NULL && maxn->next==NULL) {
+		//	for ( i=ilambda; i < nlambda; i++ ){
+		//		le = print_segmentation(stdout, head , lambda[i] , data );
+		//	}
+		//	break;
+		//}
 		curlambda = lambda[ilambda];
 		gain = maxn->psi + curlambda;
 		fprintf( stderr,
@@ -653,8 +627,8 @@ read:
 			merge( maxn, tmpnext, h, data );
 		} else { // can't merge, deltalik<0
 			heap_insert( h , maxn );
-			le = print_segmentation(stdout, head , curlambda , data, &totloglik );
-			fprintf(stderr,"@lambda=%f, %d segments\n",curlambda,le);
+			le = print_segmentation( stdout, head , curlambda , data );
+			fprintf(stderr,"@lambda=%f, %d segment(s)\n",curlambda,le);
 			if ( ilambda < ( nlambda - 1 ) ) ilambda++;
 			else break;
 		}	
@@ -670,8 +644,9 @@ read:
 			goto read;
 			break;
 		default:
-			fprintf(stderr, "illegal status:%d at line %d\n", status, __LINE__ );
-			exit(1);
+			fprintf( stderr, 
+			"illegal status:%d at line %d\n", status, __LINE__ );
+			exit( 1 );
 	}
 	if ( in != stdin ) fclose( in );
 	free( buffer );
