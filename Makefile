@@ -8,7 +8,7 @@ gimli_optimized : gimli.c
 gimli_profile : gimli.c
 	gcc -Wall  -o $@ $^ -lm -g -pg
 
-gimli_static: greedy.c
+gimli_static: gimli.c
 	gcc -Wall  -o $@ $^ -lm -static	
 
 
