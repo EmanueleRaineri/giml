@@ -37,6 +37,7 @@ typedef struct node{
 	float dpen;
 	float psi;
 	float mletheta;
+	float mlese;
 	float mean;
 	float var;
 	int sum_nc;
@@ -118,7 +119,7 @@ int print_list(FILE* stream, node* head, int* pos, float lambda){
 	return(le);
 }
 
-void mean_var(node* el, table* data, float* mean, float* var){
+/*void mean_var(node* el, table* data, float* mean, float* var){
 	float mold,mnew,sold,snew,xk;
 	int k;
 	int n = el->to - el->from +1;
@@ -138,7 +139,7 @@ void mean_var(node* el, table* data, float* mean, float* var){
 	}
 	*mean= mnew;
 	*var = snew/(n-1);
-}
+}*/
 
 float sum_log_lik(int from, int to, float theta, table* data){
 	int i;
@@ -166,11 +167,12 @@ float node_lik(node* el, table* data){
 		fprintf( stderr, "node_lik:invalid mle %.4f\n", el->mletheta );
 		exit( 1 );
 	}
-	mean_var(el, data, &(el->mean),&(el->var));
+	//mean_var(el, data, &(el->mean),&(el->var));
 	return (sum_log_lik(el->from,el->to,el->mletheta,data));
 }
 
 float lik_merge( node* el, table* data ){
+	/* likelihood of 2 merged nodes */
 	if (el->next == NULL) {
 		fprintf(stderr,
 			"el->next==NULL in delta_lik (el->psi=%.4f)\n",
@@ -241,6 +243,7 @@ node* init_node(node* el, table* data, int i){
 		el->sum_nc = data->nc[i];
 		el->sum_c  = data->c[i];
 		el->mletheta = (float)el->sum_nc/(el->sum_nc+el->sum_c);
+		el->mlese=0;
 		el->mean = data->theta[i];
 		el->var  = 0.0;
 		return(el);
@@ -280,7 +283,7 @@ node* list_of_table( node * head, table* data, int le ){
 	node* el = head;
 	int i;
 	for (i=0;i<le;i++){
-		el=init_node(el,data,i);
+		el = init_node(el,data,i);
 		el->next = malloc(sizeof(node));
 		if (el->next==NULL){
 			fprintf(stderr,"out of memory at line %d\n",__LINE__);
@@ -309,7 +312,6 @@ void prettyprint(FILE* stream, int* v, int start, int end, char sep){
 	}
 	fprintf(stream,"%d",v[end]);			
 }
-
 
 int print_segmentation(FILE* stream, node* head, float lambda, table* data ){
 	node *el;
@@ -601,13 +603,6 @@ read:
 	while(1){
 		loopc++;
 		maxn = heap_extract_max(h);
-		// XXX dubious
-		//if (maxn->prev==NULL && maxn->next==NULL) {
-		//	for ( i=ilambda; i < nlambda; i++ ){
-		//		le = print_segmentation(stdout, head , lambda[i] , data );
-		//	}
-		//	break;
-		//}
 		curlambda = lambda[ilambda];
 		gain = maxn->psi + curlambda;
 		fprintf( stderr,
@@ -628,7 +623,7 @@ read:
 		} else { // can't merge, deltalik<0
 			heap_insert( h , maxn );
 			le = print_segmentation( stdout, head , curlambda , data );
-			fprintf(stderr,"@lambda=%f, %d segment(s)\n",curlambda,le);
+			fprintf( stderr , "@lambda=%f, %d segment(s)\n", curlambda, le );
 			if ( ilambda < ( nlambda - 1 ) ) ilambda++;
 			else break;
 		}	
