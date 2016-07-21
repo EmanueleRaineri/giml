@@ -1,18 +1,18 @@
 
-gimli: gimli.c
+giml: giml.c
 	gcc -Wall  -o $@ $^ -lm
 
-gimli_optimized : gimli.c
+giml_optimized : giml.c
 	gcc -Wall  -o $@ $^ -lm -O3
 
-gimli_profile : gimli.c
+giml_profile : giml.c
 	gcc -Wall  -o $@ $^ -lm -g -pg
 
-gimli_static: gimli.c
+giml_static: giml.c
 	gcc -Wall  -o $@ $^ -lm -static	
 
 
 .PHONY : clean 
 
 clean:
-	rm -f gimli gimli_profile gimli_static gimli_optimized 
+	rm -f giml giml_profile giml_static giml_optimized 
