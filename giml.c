@@ -163,6 +163,7 @@ float node_lik(node* el, table* data){
 	el->sum_nc   = sum_nc;
 	el->sum_c    = sum_c;
 	el->mletheta = (float)sum_nc/(sum_nc+sum_c);
+	el->mlese = sqrt(el->mletheta*(1-el->mletheta)/(sum_nc+sum_c));
 	if ( fabs(el->mletheta)<FLT_EPSILON && el->sum_nc>0 ) {
 		fprintf( stderr, "node_lik:invalid mle %.4f\n", el->mletheta );
 		exit( 1 );
@@ -318,9 +319,9 @@ int print_segmentation(FILE* stream, node* head, float lambda, table* data ){
 	int le=0;
 	for( el=head; el!=NULL; el=el->next ){
 		le++;
-		fprintf( stream , "%s\t%d\t%d\t%g\t%d\t%d" ,
+		fprintf( stream , "%s\t%d\t%d\t%g\t%d\t%d\t%f\t%f" ,
 		data->chrom, data->pos[el->from], data->pos[el->to], 
-		lambda, el->from, el->to );
+		lambda, el->from, el->to, el->mletheta, el->mlese );
 		fprintf( stream, "\n" );
 	}
 	return(le);
