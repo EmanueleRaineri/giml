@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import re
 import sys
 # takes in input a  methylation counts file
 # and a giml output file
