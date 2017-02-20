@@ -2,7 +2,7 @@
 import numpy as np
 import sys
 # takes in input a  methylation counts file
-# and a giml output file and a chrom and lambda
+# and a giml output file and a chrom 
 
 methfn=sys.argv[1]
 gimlfn=sys.argv[2]
