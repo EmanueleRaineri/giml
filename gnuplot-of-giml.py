@@ -3,14 +3,19 @@ import sys
 # takes in input a  methylation counts file
 # and a giml output file
 
-methfn=sys.argv[1]
-gimlfn=sys.argv[2]
-
+try:
+	methfn=sys.argv[1]
+	gimlfn=sys.argv[2]
+	lam=sys.argv[3]
+except:
+	sys.stderr.write("usage: <meth-file> <giml-file> <lambda>\n")
+	sys.exit(1)
 
 gimlf=open(gimlfn)
 arrows=""
 for line in gimlf:
 	fields=line.split("\t")
+	if (fields[3]!=lam):continue
 	level=float(fields[6])
 	col="blue"
 	arrows=arrows+"set arrow from %s,%s to %s,%s nohead lw 1.5 lc rgb '%s'\n"%\
