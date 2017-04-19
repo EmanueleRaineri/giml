@@ -29,4 +29,9 @@ array which stores the positions of the chromosome (useful for plotting and coun
 the CpGs contained in a given segment).
 
 
+#other scripts bundled with giml
+
+the giml repository contains scripts to perform basic descriptive statistics on
+giml output, and to help plotting the segments.
+
 
